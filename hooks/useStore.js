@@ -8,10 +8,13 @@ export const useStore = create()(
       darkMode: true,
       toggleDarkMode: () => set({ darkMode: !get().darkMode }),
 
+      debugMode: false,
+      toggleDebugMode: () => set({ debugMode: !get().debugMode }),
+
     }),
     {
-      name: 'accounts-site-storage', // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
+      name: 'stop-the-thieves-storage', // name of the item in the storage (must be unique)
+      // storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
     },
   ),
 )

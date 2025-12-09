@@ -7,13 +7,15 @@ import Link from "next/link";
 import ArticlesButton from "@/components/UI/Button";
 
 import { useSocketStore } from "@/hooks/useSocketStore";
+import { useStore } from "@/hooks/useStore";
+import useFullscreen from "@/hooks/useFullScreen";
 
 function LeftPanelContent(props) {
 
     const {
-        isFullscreen,
-        requestFullscreen,
-        exitFullscreen,
+        // isFullscreen,
+        // requestFullscreen,
+        // exitFullscreen,
         reloadScene
     } = props;
 
@@ -22,6 +24,11 @@ function LeftPanelContent(props) {
     } = useSocketStore(state => ({
         socket: state.socket,
     }));
+
+    const debugMode = useStore(state => state.debugMode);
+    const toggleDebugMode = useStore(state => state.toggleDebugMode);
+
+    const { isFullscreen, requestFullscreen, exitFullscreen } = useFullscreen();
 
     return (
         <div className='w-100'>
@@ -68,6 +75,17 @@ function LeftPanelContent(props) {
                         }}
                     >
                         <span>Reload Game</span>
+                    </ArticlesButton>
+
+                    <ArticlesButton
+                        small
+                        className="w-50"
+                        onClick={() => {
+                            toggleDebugMode()
+                        }}
+                        active={debugMode}
+                    >
+                        <span>Debug Mode</span>
                     </ArticlesButton>
 
                 </div>

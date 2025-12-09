@@ -13,6 +13,7 @@ import { FPV } from "./FPV";
 import Enemies from "./Enemies";
 import Barrels from "./Barrels";
 import { PergolaModel } from "./Pergola";
+import { useStore } from "@/hooks/useStore";
 
 const texture = new TextureLoader().load(`${process.env.NEXT_PUBLIC_CDN}games/Race Game/grass.jpg`)
 
@@ -37,6 +38,9 @@ const GrassPlane = () => {
 };
 
 function GameCanvas(props) {
+
+    // const debugMode = useStore(state => state.debugMode);
+    // const toggleDebugMode = useStore(state => state.toggleDebugMode);
 
     return (
         <Canvas camera={{ position: [-10, 40, 40], fov: 50 }}>
@@ -65,17 +69,17 @@ function GameCanvas(props) {
                     scale={3}
                     rotation={[0, degToRad(0), 0]}
                 />
-    
+
                 <PergolaModel
                     scale={3}
                     rotation={[0, degToRad(90), 0]}
                 />
-    
+
                 <PergolaModel
                     scale={3}
                     rotation={[0, degToRad(180), 0]}
                 />
-    
+
                 <PergolaModel
                     scale={3}
                     rotation={[0, degToRad(270), 0]}
@@ -84,17 +88,17 @@ function GameCanvas(props) {
 
             <Physics>
 
-                <Debug>
+                {/* <Debug enabled={debugMode}> */}
 
-                    <Barrels />
+                <Barrels />
 
-                    <Enemies />
+                <Enemies />
 
-                    <Player />
+                <Player />
 
-                    <Ground />
+                <Ground />
 
-                </Debug>
+                {/* </Debug> */}
 
             </Physics>
 

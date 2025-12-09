@@ -1,4 +1,6 @@
-# Maze
+# Stop the Thieves
+
+![Preview](public/img/preview.webp)
 
 ...
 

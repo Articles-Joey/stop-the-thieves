@@ -83,9 +83,9 @@ export default function GamePage() {
         setTouchControlsEnabled,
         reloadScene,
         // controllerState,
-        isFullscreen,
-        requestFullscreen,
-        exitFullscreen,
+        // isFullscreen,
+        // requestFullscreen,
+        // exitFullscreen,
         setShowMenu
     }
 
