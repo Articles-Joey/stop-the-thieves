@@ -1,20 +1,123 @@
+import { generateRandomNickname } from '@/util/generateRandomNickname';
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 
 export const useStore = create()(
   persist(
     (set, get) => ({
 
-      darkMode: true,
-      toggleDarkMode: () => set({ darkMode: !get().darkMode }),
+      _hasHydrated: false,
+      setHasHydrated: (state) => {
+        set({
+          _hasHydrated: state
+        });
+      },
 
-      debugMode: false,
-      toggleDebugMode: () => set({ debugMode: !get().debugMode }),
+      nickname: generateRandomNickname(),
+      setNickname: (newValue) => {
+        set((prev) => ({
+          nickname: newValue
+        }))
+      },
+      randomNickname: () => {
+
+        const newNickname = generateRandomNickname();
+
+        set((prev) => ({
+          nickname: newNickname
+        }))
+      },
+
+      // character: {
+      //   model: 'Clownfish',
+      //   color: '#d87e07'
+      // },
+      // setCharacter: (newValue) => {
+      //   set((prev) => ({
+      //     character: newValue
+      //   }))
+      // },
+      // characters: [
+
+      // ],
+
+      darkMode: null,
+      toggleDarkMode: () => set({ darkMode: !get().darkMode }),
+      setDarkMode: (newValue) => {
+        set((prev) => ({
+          darkMode: newValue
+        }))
+      },
+
+      updateCamera: null,
+      setUpdateCamera: (updateCamera) => set({ updateCamera }),
+
+      threeDimensional: true, // 'Light' | 'Dark' | null
+      setThreeDimensional: (threeDimensional) => set({ threeDimensional }),
+
+      showMenu: false,
+      setShowMenu: (value) => set({ showMenu: value }),
+      toggleShowMenu: () => set({ showMenu: !get().showMenu }),
+
+      sidebar: true,
+      setSidebar: (value) => set({ sidebar: value }),
+      toggleSidebar: () => set({ sidebar: !get().sidebar }),
+
+      landingAnimation: true,
+      setLandingAnimation: (value) => set({ landingAnimation: value }),
+      toggleLandingAnimation: () => set({ landingAnimation: !get().landingAnimation }),
+
+      showInfoModal: false,
+      setShowInfoModal: (value) => set({ showInfoModal: value }),
+      toggleInfoModal: () => set({ showInfoModal: !get().showInfoModal }),
+
+      loginInfoModal: false,
+      setLoginInfoModal: (value) => set({ loginInfoModal: value }),
+      toggleLoginInfoModal: () => set({ loginInfoModal: !get().loginInfoModal }),
+
+      showSettingsModal: false,
+      setShowSettingsModal: (value) => set({ showSettingsModal: value }),
+      toggleSettingsModal: () => set({ showSettingsModal: !get().showSettingsModal }),
+
+      showCreditsModal: false,
+      setShowCreditsModal: (value) => set({ showCreditsModal: value }),
+      toggleCreditsModal: () => set({ showCreditsModal: !get().showCreditsModal }),
+
+      graphicsQuality: "High",
+      setGraphicsQuality: (value) => set({ graphicsQuality: value }),
+
+      lobbyDetails: {
+        players: [],
+        games: [],
+      },
+      setLobbyDetails: (lobbyDetails) => set({ lobbyDetails }),
+
+      debug: false,
+      toggleDebug: () => set({ debug: !get().debug }),
+      setDebug: (newValue) => {
+        set((prev) => ({
+          debug: newValue
+        }))
+      },
 
     }),
     {
-      name: 'stop-the-thieves-storage', // name of the item in the storage (must be unique)
+      name: 'stop-the-thieves-store', // name of the item in the storage (must be unique)
       // storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
+      version: 1,
+      partialize: (state) => ({
+        nickname: state.nickname,
+        character: state.character,
+        darkMode: state.darkMode,
+        graphicsQuality: state.graphicsQuality,
+        landingAnimation: state.landingAnimation,
+        sidebar: state.sidebar,
+        graphicsQuality: state.graphicsQuality,
+        debug: state.debug
+      }),
+      onRehydrateStorage: () => (state) => {
+        state.setHasHydrated(true)
+      },
     },
   ),
 )

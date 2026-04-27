@@ -8,7 +8,7 @@ import ArticlesButton from "@/components/UI/Button";
 
 import { useSocketStore } from "@/hooks/useSocketStore";
 import { useStore } from "@/hooks/useStore";
-import useFullscreen from "@/hooks/useFullScreen";
+import useFullscreen from '@articles-media/articles-dev-box/useFullscreen';
 
 function LeftPanelContent(props) {
 
@@ -25,8 +25,12 @@ function LeftPanelContent(props) {
         socket: state.socket,
     }));
 
-    const debugMode = useStore(state => state.debugMode);
-    const toggleDebugMode = useStore(state => state.toggleDebugMode);
+    const debug = useStore(state => state.debug);
+    const toggleDebug = useStore(state => state.toggleDebug);
+
+    const darkMode = useStore(state => state.darkMode);
+    const toggleDarkMode = useStore(state => state.toggleDarkMode);
+    const setShowSettingsModal = useStore(state => state.setShowSettingsModal);
 
     const { isFullscreen, requestFullscreen, exitFullscreen } = useFullscreen();
 
@@ -58,7 +62,7 @@ function LeftPanelContent(props) {
                             if (isFullscreen) {
                                 exitFullscreen()
                             } else {
-                                requestFullscreen('maze-game-page')
+                                requestFullscreen()
                             }
                         }}
                     >
@@ -81,12 +85,37 @@ function LeftPanelContent(props) {
                         small
                         className="w-50"
                         onClick={() => {
-                            toggleDebugMode()
+                            toggleDebug()
                         }}
-                        active={debugMode}
+                        active={debug}
                     >
                         <span>Debug Mode</span>
                     </ArticlesButton>
+
+                    <div
+                        className="d-flex w-50"
+                    >
+                        <ArticlesButton
+                            small
+                            className="w-100"
+                            onClick={() => {
+                                setShowSettingsModal(true)
+                            }}
+                        >
+                            <i className="fad fa-cog"></i>
+                            <span>Settings</span>
+                        </ArticlesButton>
+                        <ArticlesButton
+                            small
+                            className=""
+                            active={darkMode}
+                            onClick={() => {
+                                toggleDarkMode()
+                            }}
+                        >
+                            <i className="fad fa-sun"></i>
+                        </ArticlesButton>
+                    </div>
 
                 </div>
             </div>

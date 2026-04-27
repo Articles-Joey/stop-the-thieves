@@ -41,21 +41,38 @@ function GameCanvas(props) {
 
     // const debugMode = useStore(state => state.debugMode);
     // const toggleDebugMode = useStore(state => state.toggleDebugMode);
+    const darkMode = useStore(state => state.darkMode);
 
     return (
-        <Canvas camera={{ position: [-10, 40, 40], fov: 50 }}>
+        <Canvas
+            camera={{ position: [-10, 40, 40], fov: 50 }}
+            id="game-canvas"
+            shadows
+        >
 
             {/* <OrbitControls
                 // autoRotate={gameState?.status == 'In Lobby'}
             /> */}
 
-            <Sky
-                sunPosition={[0, 10, 0]}
-            />
+            {darkMode ?
+                <>
+                    <Sky
+                        sunPosition={[0, -1, 0]}
+                    />
+                    <ambientLight intensity={1} />
+                </>
+                :
+                <>
+                    <Sky
+                        sunPosition={[0, 1, 0]}
+                    />
+                    <ambientLight intensity={5} />
+                </>
+            }
 
             <FPV />
 
-            <ambientLight intensity={5} />
+            
             {/* <spotLight intensity={30000} position={[-50, 100, 50]} angle={5} penumbra={1} /> */}
 
             <FlatRing
@@ -86,7 +103,7 @@ function GameCanvas(props) {
                 />
             </group>
 
-            <Physics>
+            <Physics defaultContactMaterial={{ friction: 0, restitution: 0 }}>
 
                 {/* <Debug enabled={debugMode}> */}
 

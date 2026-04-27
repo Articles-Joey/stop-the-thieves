@@ -22,24 +22,14 @@ export function Model(props) {
   const { previewConfig, action } = props
 
   useEffect(() => {
+    if (!actions) return;
 
-    console.log("Actions", actions)
+    Object.values(actions).forEach((a) => a?.stop());
 
-    // actions[`Idle`].play();
+    const name = action || 'Idle';
+    actions[name]?.play();
 
-    if (!actions || !action) return
-
-    // Object.values(actions).forEach((a) => a?.stop());
-
-    actions[action]?.stop();
-
-    if (action) {
-      actions[action]?.play();
-    } else {
-      actions[`Idle`]?.play();
-    }
-
-  }, [actions, action]);
+  }, [action]);
 
   return (
     <group ref={group} {...props} dispose={null}>

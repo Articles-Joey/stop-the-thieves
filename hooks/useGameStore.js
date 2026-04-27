@@ -3,8 +3,8 @@
 import { createWithEqualityFn as create } from 'zustand/traditional'
 // import { nanoid } from 'nanoid'
 
-const getLocalStorage = (key) => JSON.parse(window.localStorage.getItem(key))
-const setLocalStorage = (key, value) => window.localStorage.setItem(key, JSON.stringify(value))
+// const getLocalStorage = (key) => JSON.parse(window.localStorage.getItem(key))
+// const setLocalStorage = (key, value) => window.localStorage.setItem(key, JSON.stringify(value))
 
 export const useGameStore = create((set) => ({
 
@@ -16,6 +16,12 @@ export const useGameStore = create((set) => ({
             controlType: newValue
         }))
     },
+
+    isThirdPerson: false,
+    setIsThirdPerson: (isThirdPerson) => set({ isThirdPerson }),
+
+    cameraDistance: 5,
+    setCameraDistance: (cameraDistance) => set({ cameraDistance }),
 
     barrels: [
         {
@@ -81,9 +87,9 @@ export const useGameStore = create((set) => ({
     // },
 
     ref: null,
-	api: null,
+    api: null,
     position: [0, 0, 0], // Initial sphere position
-	setPlayer: (ref, api) => set({ ref, api }),
+    setPlayer: (ref, api) => set({ ref, api }),
     setPosition: (position) => set({ position }),
 
     tagCounter: 0,
