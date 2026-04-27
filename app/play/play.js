@@ -18,10 +18,14 @@ import { useControllerStore } from '@/hooks/useControllerStore';
 import { useLocalStorageNew } from '@/hooks/useLocalStorageNew';
 import LeftPanelContent from '@/components/Game/LeftPanel';
 import { useSocketStore } from '@/hooks/useSocketStore';
+import { useStore } from '@/hooks/useStore';
 
 const GameCanvas = dynamic(() => import('@/components/Game/GameCanvas'), {
     ssr: false,
 });
+
+const game_name = 'Stop the Thieves'
+const game_key = 'stop-the-thieves'
 
 export default function GamePage() {
 
@@ -37,60 +41,65 @@ export default function GamePage() {
     const params = Object.fromEntries(searchParams.entries());
     const { server } = params
 
-    const { controllerState, setControllerState } = useControllerStore()
-    const [showControllerState, setShowControllerState] = useState(false)
+    const nickname = useStore(state => state.nickname)
+
+    // const { controllerState, setControllerState } = useControllerStore()
+    // const [showControllerState, setShowControllerState] = useState(false)
 
     // const [ cameraMode, setCameraMode ] = useState('Player')
 
-    const [players, setPlayers] = useState([])
+    // const [players, setPlayers] = useState([])
 
     useEffect(() => {
 
         if (server && socket.connected) {
-            socket.emit('join-room', `game:cannon-room-${server}`, {
+            const roomName = `game:${game_key}-room-${server}`;
+            socket.emit('join-room', roomName, {
                 game_id: server,
-                nickname: JSON.parse(localStorage.getItem('game:nickname')),
+                nickname: nickname,
                 client_version: '1',
 
             });
+
+            return function cleanup() {
+                socket.emit('leave-room', roomName)
+            };
         }
 
-        // return function cleanup() {
-        //     socket.emit('leave-room', 'game:glass-ceiling-landing')
-        // };
+    }, [server, socket.connected, nickname]);
 
-    }, [server, socket.connected]);
+    // const [showMenu, setShowMenu] = useState(false)
 
-    const [showMenu, setShowMenu] = useState(false)
+    const showMenu = useStore(state => state.showMenu)
+    const setShowMenu = useStore(state => state.setShowMenu)
+
+    const sceneKey = useStore(state => state.sceneKey)
 
     const [touchControlsEnabled, setTouchControlsEnabled] = useLocalStorageNew("game:touchControlsEnabled", false)
 
-    const [sceneKey, setSceneKey] = useState(0);
+    // const [sceneKey, setSceneKey] = useState(0);
 
-    const [gameState, setGameState] = useState(false)
+    // const [gameState, setGameState] = useState(false)
 
     // Function to handle scene reload
-    const reloadScene = () => {
-        setSceneKey((prevKey) => prevKey + 1);
-    };
+    // const reloadScene = () => {
+    //     setSceneKey((prevKey) => prevKey + 1);
+    // };
 
     const { isFullscreen, requestFullscreen, exitFullscreen } = useFullscreen();
 
     let panelProps = {
-        server,
-        players,
-        touchControlsEnabled,
-        setTouchControlsEnabled,
-        reloadScene,
+        // server,
+        // players,
+        // touchControlsEnabled,
+        // setTouchControlsEnabled,
+        // reloadScene,
         // controllerState,
         // isFullscreen,
         // requestFullscreen,
         // exitFullscreen,
-        setShowMenu
+        // setShowMenu
     }
-
-    const game_name = 'Stop the Thieves'
-    const game_key = 'stop-the-thieves'
 
     return (
 
@@ -124,7 +133,7 @@ export default function GamePage() {
 
             <div className={`mobile-menu ${showMenu && 'show'}`}>
                 <LeftPanelContent
-                    {...panelProps}
+                    // {...panelProps}
                 />
             </div>
 
@@ -135,7 +144,7 @@ export default function GamePage() {
             <div className='panel-left card rounded-0 d-none d-lg-flex'>
 
                 <LeftPanelContent
-                    {...panelProps}
+                    // {...panelProps}
                 />
 
             </div>

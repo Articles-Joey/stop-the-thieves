@@ -49,6 +49,10 @@ export const useStore = create()(
         }))
       },
 
+      sceneKey: 0,
+      incSceneKey: () => set((prev) => ({ sceneKey: prev.sceneKey + 1 })),
+      resetSceneKey: () => set({ sceneKey: 0 }),
+
       updateCamera: null,
       setUpdateCamera: (updateCamera) => set({ updateCamera }),
 

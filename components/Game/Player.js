@@ -5,6 +5,7 @@ import { Vector3, Color, MeshStandardMaterial, SphereGeometry } from "three"
 import { useKeyboard } from "@/hooks/useKeyboard"
 import { useGameStore } from "@/hooks/useGameStore"
 import { useControlsStore } from "@/hooks/useControlsStore"
+import { useSocketStore } from "@/hooks/useSocketStore"
 import { Model as SpacesuitModel } from "@/components/Models/Spacesuit"
 
 const JUMP_FORCE = 6;
@@ -18,6 +19,7 @@ const THIRD_PERSON_HEIGHT = 0.5;
 const CAMERA_GROUND_OFFSET = 0.3;
 const SCROLL_SENSITIVITY = 0.5;
 const KNOCKBACK_DURATION = 500; // ms
+const PROJECTILE_SPEED = 22;
 
 function PlayerBase() {
 
@@ -27,13 +29,15 @@ function PlayerBase() {
     const setSprintMeter = useGameStore((state) => state.setSprintMeter);
     const position = useGameStore((state) => state.position);
     const setIsThirdPerson = useGameStore((state) => state.setIsThirdPerson);
+    const addProjectile = useGameStore((state) => state.addProjectile);
+    const setAction = useGameStore((state) => state.setAction);
     // const setCameraDistance = useGameStore((state) => state.setCameraDistance);
 
     const { moveBackward, moveForward, moveRight, moveLeft, jump, shift, crouch, cameraView } = useKeyboard()
 
     const { camera } = useThree()
 
-    const [action, setAction] = useState("Idle")
+    const [action, setLocalAction] = useState("Idle")
     const [isJumping, setIsJumping] = useState(false)
     const [isThirdPerson, setIsThirdPersonLocal] = useState(false)
 
@@ -47,6 +51,7 @@ function PlayerBase() {
     const wasMovingForward = useRef(false)
     const knockbackEndTime = useRef(0)
     const explosionRef = useRef(null)
+    const fireRef = useRef(false)
 
     // Sprint state
     const SPRINT_MAX = 1.5       // seconds of sprint energy
@@ -62,6 +67,7 @@ function PlayerBase() {
         fixedRotation: true,
         angularDamping: 1,
         linearDamping: 0,
+        userData: { isPlayer: true },
         shapes: [
             { type: 'Sphere', args: [0.35], position: [0, 0.4, 0] },
             { type: 'Sphere', args: [0.35], position: [0, -0.4, 0] },
@@ -132,6 +138,20 @@ function PlayerBase() {
         setIsThirdPerson(isThirdPerson);
     }, [isThirdPerson, setIsThirdPerson])
 
+    // Fire projectile — left mouse click or Enter key
+    useEffect(() => {
+        const handleFire = (e) => {
+            if (e.type === 'mousedown' && e.button === 0) fireRef.current = true;
+            if (e.type === 'keydown' && e.code === 'Enter') fireRef.current = true;
+        };
+        document.addEventListener('mousedown', handleFire);
+        document.addEventListener('keydown', handleFire);
+        return () => {
+            document.removeEventListener('mousedown', handleFire);
+            document.removeEventListener('keydown', handleFire);
+        };
+    }, []);
+
     // Scroll wheel to adjust third-person camera distance
     useEffect(() => {
         const handleWheel = (e) => {
@@ -150,8 +170,11 @@ function PlayerBase() {
     useEffect(() => {
         if (isJumping) return;
         if (moveLeft || moveRight || moveBackward || moveForward) {
-            setAction(shift || isDoubleTapSprinting.current ? "Run" : "Walk");
+            const next = shift || isDoubleTapSprinting.current ? "Run" : "Walk";
+            setLocalAction(next);
+            setAction(next);
         } else {
+            setLocalAction("Idle");
             setAction("Idle");
         }
     }, [moveBackward, moveForward, moveRight, moveLeft, isJumping, shift])
@@ -177,6 +200,30 @@ function PlayerBase() {
         // Keep model in sync with physics body even during knockback
         if (modelRef.current) {
             modelRef.current.position.set(pos.current[0], pos.current[1], pos.current[2]);
+        }
+
+        // Fire projectile
+        if (fireRef.current) {
+            fireRef.current = false;
+            const dir = new Vector3(0, 0, -1).applyEuler(camera.rotation).normalize();
+            const spawnPos = [
+                camera.position.x + dir.x * 1.5,
+                camera.position.y + dir.y * 1.5,
+                camera.position.z + dir.z * 1.5,
+            ];
+            const projId = `${Date.now()}-${Math.random()}`;
+            addProjectile({
+                id: projId,
+                position: spawnPos,
+                velocity: [dir.x * PROJECTILE_SPEED, dir.y * PROJECTILE_SPEED, dir.z * PROJECTILE_SPEED],
+            });
+            const socket = useSocketStore.getState().socket;
+            socket?.emit('projectile_fired', {
+                id: projId,
+                position: spawnPos,
+                direction: [dir.x, dir.y, dir.z],
+                cameraRotation: { x: camera.rotation.x, y: camera.rotation.y },
+            });
         }
 
         // Suppress movement control while knockback is active
@@ -275,6 +322,8 @@ function PlayerBase() {
         // Landing
         if (isJumping && groundedFrames.current > 4 && Date.now() - lastJumpTime.current > 500) {
             setIsJumping(false);
+            setAction("Idle");
+            setLocalAction("Idle");
         }
 
         // Jump
@@ -282,6 +331,8 @@ function PlayerBase() {
         if (isJumpingInput && groundedFrames.current > 2 && !isJumping) {
             api.velocity.set(vel.current[0], JUMP_FORCE, vel.current[2]);
             setIsJumping(true);
+            setAction("Jump");
+            setLocalAction("Jump");
             lastJumpTime.current = Date.now();
             groundedFrames.current = 0;
             // Consume touch jump so it doesn't re-fire on landing while still held
@@ -292,6 +343,7 @@ function PlayerBase() {
         if (modelRef.current && isMoving) {
             const angle = Math.atan2(direction.x, direction.z)
             modelRef.current.rotation.y = angle
+            useGameStore.getState().setModelRotation([0, angle, 0])
         }
 
     })

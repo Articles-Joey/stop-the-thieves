@@ -14,6 +14,7 @@ import { useRouter, usePathname } from 'next/navigation';
 
 import { useSocketStore } from "@/hooks/useSocketStore";
 import { useStore } from '@/hooks/useStore';
+import { useGameStore } from '@/hooks/useGameStore';
 
 const game_key = 'stop-the-thieves'
 const game_name = 'Stop the Thieves'
@@ -151,6 +152,12 @@ export default function SocketLogicHandler(props) {
             }
         });
 
+        socket.on(`game-update`, function (msg) {
+            console.log(`game-update`, msg)
+            const setGameState = useGameStore.getState().setGameState
+            setGameState(msg)
+        });
+
         // router.events.on('routeChangeStart', handleRouteChange)
 
         return () => {
@@ -159,6 +166,7 @@ export default function SocketLogicHandler(props) {
             socket.off('force-page');
             socket.off('roomsList');
             socket.off(`game:${game_key}-landing-details`);
+            socket.off(`game-update`);
             socket.off('userCount', userCount);
             // router.events.off('routeChangeStart', handleRouteChange)
         };

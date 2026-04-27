@@ -17,11 +17,17 @@ export const useGameStore = create((set) => ({
         }))
     },
 
+    action: "Idle",
+    setAction: (action) => set({ action }),
+
     isThirdPerson: false,
     setIsThirdPerson: (isThirdPerson) => set({ isThirdPerson }),
 
     cameraDistance: 5,
     setCameraDistance: (cameraDistance) => set({ cameraDistance }),
+
+    gameState: {},
+    setGameState: (gameState) => set({ gameState }),
 
     barrels: [
         {
@@ -92,6 +98,17 @@ export const useGameStore = create((set) => ({
     setPlayer: (ref, api) => set({ ref, api }),
     setPosition: (position) => set({ position }),
 
+    modelRotation: [0, 0, 0], // [x, y, z] — model facing direction (not camera)
+    setModelRotation: (modelRotation) => set({ modelRotation }),
+
     tagCounter: 0,
     setTagCounter: (tagCounter) => set({ tagCounter }),
+
+    projectiles: [],
+    addProjectile: (projectile) => set((state) => ({
+        projectiles: [...state.projectiles, projectile],
+    })),
+    removeProjectile: (id) => set((state) => ({
+        projectiles: state.projectiles.filter((p) => p.id !== id),
+    })),
 }))

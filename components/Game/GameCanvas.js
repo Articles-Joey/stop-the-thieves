@@ -14,6 +14,10 @@ import Enemies from "./Enemies";
 import Barrels from "./Barrels";
 import { PergolaModel } from "./Pergola";
 import { useStore } from "@/hooks/useStore";
+import SocketPlayers from "./SocketPlayers";
+import SocketEnemies from "./SocketEnemies";
+import Projectiles from "./Projectiles";
+import PlayerNetworkSync from "./PlayerNetworkSync";
 
 const texture = new TextureLoader().load(`${process.env.NEXT_PUBLIC_CDN}games/Race Game/grass.jpg`)
 
@@ -42,6 +46,7 @@ function GameCanvas(props) {
     // const debugMode = useStore(state => state.debugMode);
     // const toggleDebugMode = useStore(state => state.toggleDebugMode);
     const darkMode = useStore(state => state.darkMode);
+    const debug = useStore(state => state.debug);
 
     return (
         <Canvas
@@ -105,7 +110,12 @@ function GameCanvas(props) {
 
             <Physics defaultContactMaterial={{ friction: 0, restitution: 0 }}>
 
-                {/* <Debug enabled={debugMode}> */}
+                <Debug
+                    scale={debug ? 1 : 0}
+                >
+
+                <SocketPlayers />
+                <SocketEnemies />
 
                 <Barrels />
 
@@ -113,9 +123,13 @@ function GameCanvas(props) {
 
                 <Player />
 
+                <PlayerNetworkSync />
+
+                <Projectiles />
+
                 <Ground />
 
-                {/* </Debug> */}
+                </Debug>
 
             </Physics>
 
