@@ -16,6 +16,11 @@ export default function PlayerNetworkSync() {
     const modelRotation = useGameStore((state) => state.modelRotation);
 
     const accumulator = useRef(0);
+    const lastSentData = useRef({
+        position: null,
+        rotation: null,
+        action: null,
+    });
 
     useFrame((_, delta) => {
         accumulator.current += delta;
@@ -25,12 +30,27 @@ export default function PlayerNetworkSync() {
         const socket = useSocketStore.getState().socket;
         if (!socket?.connected) return;
 
+        // Check if values have changed
+        const hasChanged =
+            JSON.stringify(position) !== JSON.stringify(lastSentData.current.position) ||
+            JSON.stringify(modelRotation) !== JSON.stringify(lastSentData.current.rotation) ||
+            action !== lastSentData.current.action;
+
+        if (!hasChanged) return;
+
         socket.emit("player_move", {
             position,
             rotation: modelRotation,
             action,
             server,
         });
+
+        // Update last sent data
+        lastSentData.current = {
+            position: JSON.parse(JSON.stringify(position)),
+            rotation: JSON.parse(JSON.stringify(modelRotation)),
+            action,
+        };
     });
 
     return null;

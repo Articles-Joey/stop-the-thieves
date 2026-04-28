@@ -115,7 +115,7 @@ export default function LobbyPage() {
 
         <div className="landing-page">
 
-            {showInfoModal &&
+            {/* {showInfoModal &&
                 <InfoModal
                     show={showInfoModal}
                     setShow={setShowInfoModal}
@@ -127,7 +127,7 @@ export default function LobbyPage() {
                     show={showSettingsModal}
                     setShow={setShowSettingsModal}
                 />
-            }
+            } */}
 
             {/* {showPrivateGameModal &&
                 <PrivateGameModal
@@ -150,6 +150,58 @@ export default function LobbyPage() {
                 <div
                     style={{ "width": "20rem" }}
                 >
+
+                    <div
+                        style={{
+                            // transform: 'scale(0.75)'
+                        }}
+                        className='d-flex justify-content-center mb-3 flex-column'
+                    >
+                        {/* <div className='d-flex justify-content-center'>
+                            {Array.from({ length: 1 }).map((_, i) => {
+                                return (
+                                    <img
+                                        src={"img/toontown-icon.webp"}
+                                        className='mx-1'
+                                    >
+                                    </img>
+                                )
+                            })}
+                        </div>
+                        <div className='d-flex justify-content-center'>
+                            {Array.from({ length: 2 }).map((_, i) => {
+                                return (
+                                    <img
+                                        src={"img/toontown-icon.webp"}
+                                        className='mx-1'
+                                    >
+                                    </img>
+                                )
+                            })}
+                        </div>
+                        <div className='d-flex justify-content-center'>
+                            {Array.from({ length: 3 }).map((_, i) => {
+                                return (
+                                    <img
+                                        src={"img/toontown-icon.webp"}
+                                        className='mx-1'
+                                    >
+                                    </img>
+                                )
+                            })}
+                        </div> */}
+                        <div className='d-flex justify-content-center'>
+                            {Array.from({ length: 4 }).map((_, i) => {
+                                return (
+                                    <img
+                                        src={"img/toontown-icon.webp"}
+                                        className='mx-1'
+                                    >
+                                    </img>
+                                )
+                            })}
+                        </div>
+                    </div>
 
                     <div
                         className="card card-articles card-sm mb-3"

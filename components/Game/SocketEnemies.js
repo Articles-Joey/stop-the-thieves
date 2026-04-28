@@ -46,7 +46,7 @@ function SocketEnemy({
 
     const [ref, api] = useSphere(() => ({
         mass: 0,
-        type: 'Static',
+        type: 'Kinematic',
         args: [0.5],
         position: [player?.x || 0, 0.75, player?.z || 0],
         userData: { 
@@ -64,6 +64,12 @@ function SocketEnemy({
             }
         },
     }));
+
+    useEffect(() => {
+        if (player) {
+            api.position.set(player.x || 0, 0.75, player.z || 0)
+        }
+    }, [player?.x, player?.z, api.position])
 
     // Walk towards origin on spawn, then stop
     // useFrame((_, delta) => {

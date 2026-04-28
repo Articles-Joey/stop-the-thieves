@@ -69,8 +69,8 @@ function PlayerBase() {
         linearDamping: 0,
         userData: { isPlayer: true },
         shapes: [
-            { type: 'Sphere', args: [0.35], position: [0, 0.4, 0] },
-            { type: 'Sphere', args: [0.35], position: [0, -0.4, 0] },
+            { type: 'Sphere', args: [0.3], position: [0, 0.4, 0] },
+            { type: 'Sphere', args: [0.3], position: [0, -0.4, 0] },
             { type: 'Cylinder', args: [0.3, 0.3, 0.8, 8], position: [0, 0, 0] },
         ],
         onCollide: (e) => {
@@ -206,10 +206,16 @@ function PlayerBase() {
         if (fireRef.current) {
             fireRef.current = false;
             const dir = new Vector3(0, 0, -1).applyEuler(camera.rotation).normalize();
+            
+            // In first-person, spawn from camera. In third-person, spawn from player model position.
+            const spawnOrigin = isThirdPerson 
+                ? new Vector3(pos.current[0], pos.current[1] + THIRD_PERSON_HEIGHT, pos.current[2])
+                : camera.position;
+
             const spawnPos = [
-                camera.position.x + dir.x * 1.5,
-                camera.position.y + dir.y * 1.5,
-                camera.position.z + dir.z * 1.5,
+                spawnOrigin.x + dir.x * 1.5,
+                spawnOrigin.y + dir.y * 1.5,
+                spawnOrigin.z + dir.z * 1.5,
             ];
             const projId = `${Date.now()}-${Math.random()}`;
             addProjectile({

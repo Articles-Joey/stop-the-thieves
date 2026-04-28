@@ -96,6 +96,10 @@ export const useStore = create()(
       },
       setLobbyDetails: (lobbyDetails) => set({ lobbyDetails }),
 
+      toontownMode: false,
+      setToontownMode: (state) => set({ toontownMode: state }),
+      toggleToontownMode: () => set({ toontownMode: !get().toontownMode }),
+
       debug: false,
       toggleDebug: () => set({ debug: !get().debug }),
       setDebug: (newValue) => {
@@ -117,7 +121,8 @@ export const useStore = create()(
         landingAnimation: state.landingAnimation,
         sidebar: state.sidebar,
         graphicsQuality: state.graphicsQuality,
-        debug: state.debug
+        debug: state.debug,
+        toontownMode: state.toontownMode,
       }),
       onRehydrateStorage: () => (state) => {
         state.setHasHydrated(true)

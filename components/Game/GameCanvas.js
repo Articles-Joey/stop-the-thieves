@@ -18,28 +18,31 @@ import SocketPlayers from "./SocketPlayers";
 import SocketEnemies from "./SocketEnemies";
 import Projectiles from "./Projectiles";
 import PlayerNetworkSync from "./PlayerNetworkSync";
+import { ModelToontownSkybox } from "../Models/ToontownSkybox";
+import GrassPlane from "./GrassPlane";
+import GrassArea from "./GrassArea";
+import ImageRing from "./ImageRing";
 
-const texture = new TextureLoader().load(`${process.env.NEXT_PUBLIC_CDN}games/Race Game/grass.jpg`)
+// const texture = new TextureLoader().load(`${process.env.NEXT_PUBLIC_CDN}games/Race Game/grass.jpg`)
+// const GrassPlane = () => {
 
-const GrassPlane = () => {
+//     const width = 110; // Set the width of the plane
+//     const height = 170; // Set the height of the plane
 
-    const width = 110; // Set the width of the plane
-    const height = 170; // Set the height of the plane
+//     texture.magFilter = NearestFilter;
+//     texture.wrapS = RepeatWrapping
+//     texture.wrapT = RepeatWrapping
+//     texture.repeat.set(5, 5)
 
-    texture.magFilter = NearestFilter;
-    texture.wrapS = RepeatWrapping
-    texture.wrapT = RepeatWrapping
-    texture.repeat.set(5, 5)
-
-    return (
-        <>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
-                <planeGeometry attach="geometry" args={[width, height]} />
-                <meshStandardMaterial attach="material" map={texture} />
-            </mesh>
-        </>
-    );
-};
+//     return (
+//         <>
+//             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+//                 <planeGeometry attach="geometry" args={[width, height]} />
+//                 <meshStandardMaterial attach="material" map={texture} />
+//             </mesh>
+//         </>
+//     );
+// };
 
 function GameCanvas(props) {
 
@@ -47,6 +50,7 @@ function GameCanvas(props) {
     // const toggleDebugMode = useStore(state => state.toggleDebugMode);
     const darkMode = useStore(state => state.darkMode);
     const debug = useStore(state => state.debug);
+    const toontownMode = useStore(state => state.toontownMode);
 
     return (
         <Canvas
@@ -77,6 +81,14 @@ function GameCanvas(props) {
 
             <FPV />
 
+            {toontownMode && 
+                <ModelToontownSkybox />
+            }
+
+            <ImageRing />
+
+            <GrassPlane />
+            <GrassArea />
             
             {/* <spotLight intensity={30000} position={[-50, 100, 50]} angle={5} penumbra={1} /> */}
 
@@ -119,7 +131,7 @@ function GameCanvas(props) {
 
                 <Barrels />
 
-                <Enemies />
+                {/* <Enemies /> */}
 
                 <Player />
 
@@ -157,23 +169,23 @@ function Ground() {
         mass: 0,
         type: 'Static',
         args: [100, 0.5, 100],
-        position: [0, 0, 0],
+        position: [0, -0.25, 0],
     }))
 
-    const width = 110; // Set the width of the plane
-    const height = 170; // Set the height of the plane
+    // const width = 110; // Set the width of the plane
+    // const height = 170; // Set the height of the plane
 
-    texture.magFilter = NearestFilter;
-    texture.wrapS = RepeatWrapping
-    texture.wrapT = RepeatWrapping
-    texture.repeat.set(5, 5)
+    // texture.magFilter = NearestFilter;
+    // texture.wrapS = RepeatWrapping
+    // texture.wrapT = RepeatWrapping
+    // texture.repeat.set(5, 5)
 
     return (
         <mesh ref={ref} castShadow>
-            <boxGeometry args={[100, 0.5, 100]} />
+            {/* <boxGeometry args={[100, 0.5, 100]} /> */}
             {/* <BeachBall /> */}
             {/* <meshStandardMaterial color="#08e8de" /> */}
-            <meshStandardMaterial attach="material" map={texture} />
+            {/* <meshStandardMaterial attach="material" map={texture} /> */}
         </mesh>
     )
 

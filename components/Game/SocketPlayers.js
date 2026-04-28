@@ -4,6 +4,7 @@ import * as THREE from "three"
 import { useGameStore } from "@/hooks/useGameStore"
 
 import { Model as SpacesuitModel } from "@/components/Models/Spacesuit";
+import { useSocketStore } from "@/hooks/useSocketStore";
 
 // Server sends state at 30 Hz — interpolate between ticks to smooth motion
 const NETWORK_RATE = 1 / 30;
@@ -90,13 +91,20 @@ function InterpolatedPlayer({ player }) {
 }
 
 export default function SocketPlayers() {
+
     const players = useGameStore(state => state.gameState.players)
+    const socket = useSocketStore(state => state.socket)
 
     return (
         <group>
-            {players?.length > 0 && players?.map((player, index) => (
+            {players?.length > 0 && players?.map((player, index) => {
+
+                if (socket?.id === player.id) return null; // Don't render self from socket data
+
+                return (
                 <InterpolatedPlayer key={player?.id || index} player={player} />
-            ))}
+            )
+            })}
         </group>
     )
 }
