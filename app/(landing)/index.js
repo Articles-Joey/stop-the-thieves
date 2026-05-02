@@ -20,21 +20,7 @@ import { useStore } from '@/hooks/useStore';
 import useUserDetails from '@articles-media/articles-dev-box/useUserDetails';
 import useUserToken from '@articles-media/articles-dev-box/useUserToken';
 
-// import GameScoreboard from 'components/Games/GameScoreboard'
-
-// const Ad = dynamic(() => import('components/Ads/Ad'), {
-//     ssr: false,
-// });
-
-const InfoModal = dynamic(
-    () => import('@/components/UI/InfoModal'),
-    { ssr: false }
-)
-
-const SettingsModal = dynamic(
-    () => import('@/components/UI/SettingsModal'),
-    { ssr: false }
-)
+import logo from '../icon.png'
 
 import SessionButton from '@articles-media/articles-dev-box/SessionButton';
 
@@ -43,7 +29,15 @@ const ReturnToLauncherButton = dynamic(() =>
     { ssr: false }
 );
 
-const assets_src = 'games/Cannon/'
+const GameScoreboard = dynamic(() =>
+    import('@articles-media/articles-dev-box/GameScoreboard'),
+    { ssr: false }
+);
+
+const Ad = dynamic(() =>
+    import('@articles-media/articles-dev-box/Ad'),
+    { ssr: false }
+);
 
 const game_key = 'stop-the-thieves'
 const game_name = 'Stop the Thieves'
@@ -115,27 +109,6 @@ export default function LobbyPage() {
 
         <div className="landing-page">
 
-            {/* {showInfoModal &&
-                <InfoModal
-                    show={showInfoModal}
-                    setShow={setShowInfoModal}
-                />
-            }
-
-            {showSettingsModal &&
-                <SettingsModal
-                    show={showSettingsModal}
-                    setShow={setShowSettingsModal}
-                />
-            } */}
-
-            {/* {showPrivateGameModal &&
-                <PrivateGameModal
-                    show={showPrivateGameModal}
-                    setShow={setShowPrivateGameModal}
-                />
-            } */}
-
             <div className='background-wrap'>
                 <Image
                     src={`${process.env.NEXT_PUBLIC_CDN}games/Stop the Thiefs/cog-thief-toontown-thumbnail.webp`}
@@ -157,45 +130,14 @@ export default function LobbyPage() {
                         }}
                         className='d-flex justify-content-center mb-3 flex-column'
                     >
-                        {/* <div className='d-flex justify-content-center'>
+                        <div className='d-flex justify-content-center'>
                             {Array.from({ length: 1 }).map((_, i) => {
                                 return (
                                     <img
-                                        src={"img/toontown-icon.webp"}
+                                        src={logo.src}
                                         className='mx-1'
-                                    >
-                                    </img>
-                                )
-                            })}
-                        </div>
-                        <div className='d-flex justify-content-center'>
-                            {Array.from({ length: 2 }).map((_, i) => {
-                                return (
-                                    <img
-                                        src={"img/toontown-icon.webp"}
-                                        className='mx-1'
-                                    >
-                                    </img>
-                                )
-                            })}
-                        </div>
-                        <div className='d-flex justify-content-center'>
-                            {Array.from({ length: 3 }).map((_, i) => {
-                                return (
-                                    <img
-                                        src={"img/toontown-icon.webp"}
-                                        className='mx-1'
-                                    >
-                                    </img>
-                                )
-                            })}
-                        </div> */}
-                        <div className='d-flex justify-content-center'>
-                            {Array.from({ length: 4 }).map((_, i) => {
-                                return (
-                                    <img
-                                        src={"img/toontown-icon.webp"}
-                                        className='mx-1'
+                                        width={200}
+                                        key={i}
                                     >
                                     </img>
                                 )
@@ -206,15 +148,6 @@ export default function LobbyPage() {
                     <div
                         className="card card-articles card-sm mb-3"
                     >
-
-                        {/* <div style={{ position: 'relative', height: '200px' }}>
-                            <Image
-                                src={Logo}
-                                alt=""
-                                fill
-                                style={{ objectFit: 'cover' }}
-                            />
-                        </div> */}
 
                         <div className='card-header d-flex align-items-center'>
 
@@ -391,19 +324,6 @@ export default function LobbyPage() {
                                 </ArticlesButton>
                             </Link>
 
-                            {/* <Link href={'/'} className='w-50'>
-                                <ArticlesButton
-                                    className={`w-100`}
-                                    small
-                                    onClick={() => {
-    
-                                    }}
-                                >
-                                    <i className="fad fa-sign-out fa-rotate-180"></i>
-                                    Leave Game
-                                </ArticlesButton>
-                            </Link> */}
-
                             <ArticlesButton
                                 className={`w-50`}
                                 small
@@ -421,15 +341,41 @@ export default function LobbyPage() {
 
                     <SessionButton
                         port={game_port}
+                        friendsButton
                     />
 
                     <ReturnToLauncherButton />
 
                 </div>
 
-                {/* <GameScoreboard game="Death Race" /> */}
+                <GameScoreboard
+                    game={game_name}
+                    style="Default"
+                    darkMode={darkMode ? true : false}
+                    // prepend={
+                    //     <div
+                    //         style={{
+                    //             width: '100%',
+                    //             height: '200px',
+                    //             display: 'flex',
+                    //             justifyContent: 'center',
+                    //             alignItems: 'center',
+                    //         }}
+                    //     >
+                    //         <RotatingMascot />
+                    //     </div>
+                    // }
+                />
 
-                {/* <Ad section={"Games"} section_id={game_name} /> */}
+                <Ad
+                    style="Default"
+                    section={"Games"}
+                    section_id={game_name}
+                    darkMode={darkMode ? true : false}
+                    user_ad_token={userToken}
+                    userDetails={userDetails}
+                    userDetailsLoading={userDetailsLoading}
+                />
 
             </div>
         </div>

@@ -1,24 +1,17 @@
 "use client"
-import { useEffect, useContext, useState, useRef, useMemo } from 'react';
+import { useEffect } from 'react';
 
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
 import dynamic from 'next/dynamic'
-import Script from 'next/script'
-
-// import { useSelector, useDispatch } from 'react-redux'
-
-// import ROUTES from '@/components/constants/routes';
-
-import ArticlesButton from '@/components/UI/Button';
 
 import useFullscreen from '@articles-media/articles-dev-box/useFullscreen';
-import { useControllerStore } from '@/hooks/useControllerStore';
 
-import { useLocalStorageNew } from '@/hooks/useLocalStorageNew';
 import LeftPanelContent from '@/components/Game/LeftPanel';
 import { useSocketStore } from '@/hooks/useSocketStore';
 import { useStore } from '@/hooks/useStore';
+
+import GameMenu from '@articles-media/articles-dev-box/GameMenu';
 
 const GameCanvas = dynamic(() => import('@/components/Game/GameCanvas'), {
     ssr: false,
@@ -35,20 +28,13 @@ export default function GamePage() {
         socket: state.socket
     }));
 
-    const router = useRouter()
-    const pathname = usePathname()
     const searchParams = useSearchParams()
     const params = Object.fromEntries(searchParams.entries());
     const { server } = params
 
     const nickname = useStore(state => state.nickname)
-
-    // const { controllerState, setControllerState } = useControllerStore()
-    // const [showControllerState, setShowControllerState] = useState(false)
-
-    // const [ cameraMode, setCameraMode ] = useState('Player')
-
-    // const [players, setPlayers] = useState([])
+    const sidebar = useStore(state => state.sidebar)
+    const sceneKey = useStore(state => state.sceneKey)
 
     useEffect(() => {
 
@@ -68,96 +54,39 @@ export default function GamePage() {
 
     }, [server, socket.connected, nickname]);
 
-    // const [showMenu, setShowMenu] = useState(false)
-
-    const showMenu = useStore(state => state.showMenu)
-    const setShowMenu = useStore(state => state.setShowMenu)
-
-    const sceneKey = useStore(state => state.sceneKey)
-
-    const [touchControlsEnabled, setTouchControlsEnabled] = useLocalStorageNew("game:touchControlsEnabled", false)
-
-    // const [sceneKey, setSceneKey] = useState(0);
-
-    // const [gameState, setGameState] = useState(false)
-
-    // Function to handle scene reload
-    // const reloadScene = () => {
-    //     setSceneKey((prevKey) => prevKey + 1);
-    // };
-
     const { isFullscreen, requestFullscreen, exitFullscreen } = useFullscreen();
-
-    let panelProps = {
-        // server,
-        // players,
-        // touchControlsEnabled,
-        // setTouchControlsEnabled,
-        // reloadScene,
-        // controllerState,
-        // isFullscreen,
-        // requestFullscreen,
-        // exitFullscreen,
-        // setShowMenu
-    }
 
     return (
 
         <div
-            className={`${game_key}-game-page ${isFullscreen && 'fullscreen'}`}
+            className={`${game_key}-game-page ${isFullscreen && 'fullscreen'} ${sidebar && 'show-sidebar'}`}
             id={`${game_key}-game-page`}
         >
 
-            <div className="menu-bar card card-articles p-1 justify-content-center">
+            <GameMenu
+                useStore={useStore}
+                LeftPanelContent={LeftPanelContent}
 
-                <div className='flex-header align-items-center'>
+                // menuBarStyle={"Corner Button"}
+                // menuBarButtonPosition={"Left"}
 
-                    <ArticlesButton
-                        small
-                        active={showMenu}
-                        onClick={() => {
-                            setShowMenu(prev => !prev)
-                        }}
-                    >
-                        <i className="fad fa-bars"></i>
-                        <span>Menu</span>
-                    </ArticlesButton>
+                menuBarConfig={{
+                    // style: "Bar",
+                    style: "Corner Button",
+                    menuBarButtonPosition: "Left",
+                    // leftSlotChildren: <>
+                    //     123
+                    // </>,
+                    // centerSlotChildren: <>
+                    //     123
+                    // </>,
+                    // rightSlotChildren: <>
+                    //     123
+                    // </>,
+                }}
 
-                    <div>
-                        {/* Y: {(playerLocation?.y || 0)} */}
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div className={`mobile-menu ${showMenu && 'show'}`}>
-                <LeftPanelContent
-                    // {...panelProps}
-                />
-            </div>
-
-            {/* <TouchControls
-                touchControlsEnabled={touchControlsEnabled}
-            /> */}
-
-            <div className='panel-left card rounded-0 d-none d-lg-flex'>
-
-                <LeftPanelContent
-                    // {...panelProps}
-                />
-
-            </div>
-
-            {/* <div className='game-info'>
-                <div className="card card-articles card-sm">
-                    <div className="card-body">
-                        <pre> 
-                            {JSON.stringify(playerData, undefined, 2)}
-                        </pre>
-                    </div>
-                </div>
-            </div> */}
+                sidebarStyle={"Static Panel"}
+            />
 
             <div className='canvas-wrap'>
 
