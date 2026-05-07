@@ -1,129 +1,25 @@
-import { generateRandomNickname } from '@/util/generateRandomNickname';
+import generateRandomNickname from '@/util/generateRandomNickname';
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+
+import typicalZustandStoreExcludes from '@articles-media/articles-dev-box/typicalZustandStoreExcludes';
+import typicalZustandStoreStateSlice from '@articles-media/articles-dev-box/typicalZustandStoreStateSlice';
 
 export const useStore = create()(
   persist(
     (set, get) => ({
-
-      _hasHydrated: false,
-      setHasHydrated: (state) => {
-        set({
-          _hasHydrated: state
-        });
-      },
-
-      nickname: generateRandomNickname(),
-      setNickname: (newValue) => {
-        set((prev) => ({
-          nickname: newValue
-        }))
-      },
-      randomNickname: () => {
-
-        const newNickname = generateRandomNickname();
-
-        set((prev) => ({
-          nickname: newNickname
-        }))
-      },
-
-      // character: {
-      //   model: 'Clownfish',
-      //   color: '#d87e07'
-      // },
-      // setCharacter: (newValue) => {
-      //   set((prev) => ({
-      //     character: newValue
-      //   }))
-      // },
-      // characters: [
-
-      // ],
-
-      darkMode: null,
-      toggleDarkMode: () => set({ darkMode: !get().darkMode }),
-      setDarkMode: (newValue) => {
-        set((prev) => ({
-          darkMode: newValue
-        }))
-      },
-
-      sceneKey: 0,
-      incSceneKey: () => set((prev) => ({ sceneKey: prev.sceneKey + 1 })),
-      resetSceneKey: () => set({ sceneKey: 0 }),
-
-      updateCamera: null,
-      setUpdateCamera: (updateCamera) => set({ updateCamera }),
-
-      threeDimensional: true, // 'Light' | 'Dark' | null
-      setThreeDimensional: (threeDimensional) => set({ threeDimensional }),
-
-      showMenu: false,
-      setShowMenu: (value) => set({ showMenu: value }),
-      toggleShowMenu: () => set({ showMenu: !get().showMenu }),
-
-      sidebar: true,
-      setSidebar: (value) => set({ sidebar: value }),
-      toggleSidebar: () => set({ sidebar: !get().sidebar }),
-
-      landingAnimation: true,
-      setLandingAnimation: (value) => set({ landingAnimation: value }),
-      toggleLandingAnimation: () => set({ landingAnimation: !get().landingAnimation }),
-
-      showInfoModal: false,
-      setShowInfoModal: (value) => set({ showInfoModal: value }),
-      toggleInfoModal: () => set({ showInfoModal: !get().showInfoModal }),
-
-      loginInfoModal: false,
-      setLoginInfoModal: (value) => set({ loginInfoModal: value }),
-      toggleLoginInfoModal: () => set({ loginInfoModal: !get().loginInfoModal }),
-
-      showSettingsModal: false,
-      setShowSettingsModal: (value) => set({ showSettingsModal: value }),
-      toggleSettingsModal: () => set({ showSettingsModal: !get().showSettingsModal }),
-
-      showCreditsModal: false,
-      setShowCreditsModal: (value) => set({ showCreditsModal: value }),
-      toggleCreditsModal: () => set({ showCreditsModal: !get().showCreditsModal }),
-
-      graphicsQuality: "High",
-      setGraphicsQuality: (value) => set({ graphicsQuality: value }),
-
-      lobbyDetails: {
-        players: [],
-        games: [],
-      },
-      setLobbyDetails: (lobbyDetails) => set({ lobbyDetails }),
-
-      toontownMode: false,
-      setToontownMode: (state) => set({ toontownMode: state }),
-      toggleToontownMode: () => set({ toontownMode: !get().toontownMode }),
-
-      debug: false,
-      toggleDebug: () => set({ debug: !get().debug }),
-      setDebug: (newValue) => {
-        set((prev) => ({
-          debug: newValue
-        }))
-      },
-
+      ...typicalZustandStoreStateSlice(set, get, generateRandomNickname),
     }),
     {
-      name: 'stop-the-thieves-store', // name of the item in the storage (must be unique)
-      // storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
+      name: 'game-storage',
       version: 1,
-      partialize: (state) => ({
-        nickname: state.nickname,
-        character: state.character,
-        darkMode: state.darkMode,
-        graphicsQuality: state.graphicsQuality,
-        landingAnimation: state.landingAnimation,
-        sidebar: state.sidebar,
-        graphicsQuality: state.graphicsQuality,
-        debug: state.debug,
-        toontownMode: state.toontownMode,
-      }),
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(([key]) => ![
+            // Exclude list of keys to not persist
+            ...typicalZustandStoreExcludes,
+          ].includes(key))
+        ),
       onRehydrateStorage: () => (state) => {
         state.setHasHydrated(true)
       },

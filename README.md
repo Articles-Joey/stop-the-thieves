@@ -2,7 +2,7 @@
 
 ![Preview](public/img/preview.webp)
 
-...
+Stop the thieves from taking all your barrels. Shoot the thieves as they move towards the center. If they get too close they will grab a barrel and start walking away with it.
 
 ## Getting Started
 
@@ -14,4 +14,4 @@ npm run dev
 
 ## Multiplayer
 
-Aiming to have multiplayer via P2P and Websockets. Websocket backend code is not in this repo or available at this time. P2P code will be included here.
+Websocket backend code is not in this repo or available at this time.

@@ -1,15 +1,12 @@
 import { memo } from "react";
 
-import Link from "next/link";
-
-// import ROUTES from '@/components/constants/routes';
-
 import ArticlesButton from "@/components/UI/Button";
-
 import { useSocketStore } from "@/hooks/useSocketStore";
 import { useStore } from "@/hooks/useStore";
-import useFullscreen from '@articles-media/articles-dev-box/useFullscreen';
 import GameDetailsPanel from "./GameDetailsPanel";
+
+import useFullscreen from '@articles-media/articles-dev-box/useFullscreen';
+import GameMenuPrimaryButtonGroup from '@articles-media/articles-dev-box/GameMenuPrimaryButtonGroup';
 
 function LeftPanelContent(props) {
 
@@ -22,13 +19,7 @@ function LeftPanelContent(props) {
     const debug = useStore(state => state.debug);
     const toggleDebug = useStore(state => state.toggleDebug);
 
-    const darkMode = useStore(state => state.darkMode);
-    const toggleDarkMode = useStore(state => state.toggleDarkMode);
-    const setShowSettingsModal = useStore(state => state.setShowSettingsModal);
-    const sidebar = useStore(state => state.sidebar);
-    const toggleSidebar = useStore(state => state.toggleSidebar);
-
-    const incSceneKey = useStore(state => state.incSceneKey);
+    const reloadScene = useStore(state => state.reloadScene);
 
     const { isFullscreen, requestFullscreen, exitFullscreen } = useFullscreen();
 
@@ -41,41 +32,16 @@ function LeftPanelContent(props) {
 
                     <div className="d-flex flex-wrap">
 
-                        <Link
-                            href={'/'}
-                            className="w-50"
-                        >
-                            <ArticlesButton
-                                className='w-100'
-                                small
-                            >
-                                <i className="fad fa-arrow-alt-square-left"></i>
-                                <span>Leave Game</span>
-                            </ArticlesButton>
-                        </Link>
-    
-                        <ArticlesButton
-                            small
-                            className="w-50"
-                            active={isFullscreen}
-                            onClick={() => {
-                                if (isFullscreen) {
-                                    exitFullscreen()
-                                } else {
-                                    requestFullscreen()
-                                }
-                            }}
-                        >
-                            {isFullscreen && <span>Exit </span>}
-                            {!isFullscreen && <span><i className='fad fa-expand'></i></span>}
-                            <span>Fullscreen</span>
-                        </ArticlesButton>
+                        <GameMenuPrimaryButtonGroup 
+                            useStore={useStore}
+                            type="GameMenu"
+                        />
     
                         <ArticlesButton
                             small
                             className="w-50"
                             onClick={() => {
-                                incSceneKey()
+                                reloadScene()
                             }}
                         >
                             <span>Reload Game</span>
@@ -90,43 +56,6 @@ function LeftPanelContent(props) {
                             active={debug}
                         >
                             <span>Debug Mode</span>
-                        </ArticlesButton>
-    
-                        <div
-                            className="d-flex w-50"
-                        >
-                            <ArticlesButton
-                                small
-                                className="w-100"
-                                onClick={() => {
-                                    setShowSettingsModal(true)
-                                }}
-                            >
-                                <i className="fad fa-cog"></i>
-                                <span>Settings</span>
-                            </ArticlesButton>
-                            <ArticlesButton
-                                small
-                                className=""
-                                active={darkMode}
-                                onClick={() => {
-                                    toggleDarkMode()
-                                }}
-                            >
-                                <i className="fad fa-sun"></i>
-                            </ArticlesButton>
-                        </div>
-    
-                        <ArticlesButton
-                            small
-                            className='w-50'
-                            active={sidebar}
-                            onClick={() => {
-                                toggleSidebar()
-                            }}
-                        >
-                            <i className="fad fa-cog"></i>
-                            <span>Sidebar</span>
                         </ArticlesButton>
 
                     </div>

@@ -18,9 +18,11 @@ const mazeNouns = [
  * Generates a random maze-themed nickname.
  * @returns {string} A random nickname like "LostRunner42" or "TwistedPathfinder7".
  */
-export const generateRandomNickname = () => {
+const generateRandomNickname = () => {
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const noun = mazeNouns[Math.floor(Math.random() * mazeNouns.length)];
     const num = Math.floor(Math.random() * 100);
     return `${adj}${noun}${num}`;
 };
+
+export default generateRandomNickname;
