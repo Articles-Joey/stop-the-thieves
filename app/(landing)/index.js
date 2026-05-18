@@ -66,17 +66,17 @@ export default function LobbyPage() {
         token: userToken
     });
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        if (connected) {
-            socket?.emit('join-room', `game:${game_key}-landing`);
-        }
+    //     if (connected) {
+    //         socket?.emit('join-room', `game:${game_key}-landing`);
+    //     }
 
-        return function cleanup() {
-            socket?.emit('leave-room', `game:${game_key}-landing`)
-        };
+    //     return function cleanup() {
+    //         socket?.emit('leave-room', `game:${game_key}-landing`)
+    //     };
 
-    }, [connected]);
+    // }, [connected]);
 
     return (
 
@@ -145,12 +145,12 @@ export default function LobbyPage() {
                             </Link>
 
                             <div className="fw-bold mb-1 small text-center">
-                                {lobbyDetails.players.length || 0} player{lobbyDetails.players.length > 1 && 's'} in the lobby.
+                                {lobbyDetails?.online_player_count || 0} player{lobbyDetails?.online_player_count !== 1 && 's'} in the lobby.
                             </div>
 
                             <div className="servers">
 
-                                {[1, 2, 3, 4].map(id => {
+                                {[1, 2].map(id => {
 
                                     let lobbyLookup = lobbyDetails?.fourFrogsGlobalState?.games?.find(lobby =>
                                         parseInt(lobby.server_id) == id
