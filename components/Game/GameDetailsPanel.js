@@ -1,139 +1,106 @@
-import { useGameStore } from "@/hooks/useGameStore"
-import { useSocketStore } from "@/hooks/useSocketStore"
-// import { useIceSlideStore } from "@/hooks/useIceSlideStore"
+"use client";
+
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import UndoIcon from "@mui/icons-material/Undo";
+import { useGameStore } from "@/hooks/useGameStore";
+import { useSocketStore } from "@/hooks/useSocketStore";
+
+const entrySx = { border: 1, borderColor: "divider", p: "0.5rem" };
+
+function ReadyBadge({ ready }) {
+    return (
+        <Chip
+            label={ready ? "Ready" : "Not Ready"}
+            color={ready ? "success" : "error"}
+            size="small"
+            sx={{ mr: "0.25rem", height: "auto", fontSize: "0.6rem", fontWeight: 700 }}
+        />
+    );
+}
 
 export default function GameDetailsPanel() {
-
-    const players = useGameStore(state => state.gameState.players)
-    const enemies = useGameStore(state => state.gameState.enemies)
-    const barrels = useGameStore(state => state.gameState.barrels)
-
-    const socket = useSocketStore(state => state.socket)
+    const players = useGameStore((state) => state.gameState.players);
+    const enemies = useGameStore((state) => state.gameState.enemies);
+    const barrels = useGameStore((state) => state.gameState.barrels);
+    const socket = useSocketStore((state) => state.socket);
 
     return (
-        <div className="card game-details-panel">
-
-            <div className="card-body">
-
+        <Box
+            className="game-details-panel"
+            sx={{ bgcolor: "game.card", border: 1, borderColor: "divider", borderRadius: "0.375rem" }}
+        >
+            <Box sx={{ p: "1rem" }}>
                 {socket?.id}
-
-                <div className="h6 mb-2 d-flex justify-content-between">
+                <Box sx={{ fontSize: "1rem", fontWeight: 500, mb: "0.5rem", display: "flex", justifyContent: "space-between" }}>
                     <RoundAndTimer />
-                </div>
+                </Box>
 
-                <div>Players</div>
-
-                {players?.length > 0 && players?.map((player, index) => (
-                    <div key={player.id} className="player-entry border p-2">
-
-                        {/* <div className="player-color" style={{ backgroundColor: player.color }}></div> */}
-
-                        <div className="" style={{ fontSize: "0.6rem" }}>ID: {player.id}</div>
-
-                        <div className="player-name d-flex align-items-center">
-                            <span
-                                className={`badge ${player.ready ? 'bg-success' : 'bg-danger'} me-1`}
-                                style={{
-                                    fontSize: "0.6rem"
-                                }}
-                            >
-                                {player.ready ? "Ready" : "Not Ready"}
-                            </span>
+                <Box>Players</Box>
+                {players?.map((player) => (
+                    <Box key={player.id} className="player-entry" sx={entrySx}>
+                        <Box sx={{ fontSize: "0.6rem" }}>ID: {player.id}</Box>
+                        <Box className="player-name" sx={{ display: "flex", alignItems: "center" }}>
+                            <ReadyBadge ready={player.ready} />
                             {player.nickname || "?"}
-                        </div>
-
-                        <div className="d-flex justify-content-between">
-
-                            <div>X: {player?.position?.[0]?.toFixed(2) || 0} | </div>
-                            <div>Y: {player?.position?.[1]?.toFixed(2) || 0} | </div>
-                            <div>Z: {player?.position?.[2]?.toFixed(2) || 0}</div>
-
-                            <div className="d-flex">
-                                <div className="me-2">
-                                    <i className="fad fa-rocket"></i>
+                        </Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Box>X: {player?.position?.[0]?.toFixed(2) || 0} | </Box>
+                            <Box>Y: {player?.position?.[1]?.toFixed(2) || 0} | </Box>
+                            <Box>Z: {player?.position?.[2]?.toFixed(2) || 0}</Box>
+                            <Box sx={{ display: "flex" }}>
+                                <Box sx={{ mr: "0.5rem", display: "flex", alignItems: "center" }}>
+                                    <RocketLaunchIcon fontSize="inherit" sx={{ mr: "0.2rem" }} />
                                     {player.hitPower}
-                                </div>
-                                <div>
-                                    <i className="fad fa-undo"></i>
+                                </Box>
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                    <UndoIcon fontSize="inherit" sx={{ mr: "0.2rem" }} />
                                     {player.hitRotation}
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
                 ))}
 
-                <div>Enemies</div>
-
-                {enemies?.length > 0 && enemies?.map((enemy, index) => (
-                    <div key={enemy.id} className="enemy-entry border p-2">
-
-                        {/* <div className="player-color" style={{ backgroundColor: player.color }}></div> */}
-
-                        <div className="" style={{ fontSize: "0.6rem" }}>ID: {enemy.id}</div>
-
-                        <div className="player-name d-flex align-items-center">
-                            <span
-                                className={`badge ${enemy.ready ? 'bg-success' : 'bg-danger'} me-1`}
-                                style={{
-                                    fontSize: "0.6rem"
-                                }}
-                            >
-                                {enemy.ready ? "Ready" : "Not Ready"}
-                            </span>
+                <Box>Enemies</Box>
+                {enemies?.map((enemy) => (
+                    <Box key={enemy.id} className="enemy-entry" sx={entrySx}>
+                        <Box sx={{ fontSize: "0.6rem" }}>ID: {enemy.id}</Box>
+                        <Box className="player-name" sx={{ display: "flex", alignItems: "center" }}>
+                            <ReadyBadge ready={enemy.ready} />
                             {enemy.nickname || "?"}
-                        </div>
-
-                        <div className="d-flex justify-content-between">
-
-                            <div>X: {enemy?.x?.toFixed(2) || 0} | </div>
-                            {/* <div>Y: {enemy?.y?.toFixed(2) || 0} | </div> */}
-                            <div>Z: {enemy?.z?.toFixed(2) || 0}</div>
-
-                        </div>
-
-                    </div>
+                        </Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Box>X: {enemy?.x?.toFixed(2) || 0} | </Box>
+                            <Box>Z: {enemy?.z?.toFixed(2) || 0}</Box>
+                        </Box>
+                    </Box>
                 ))}
 
-                <div>Barrels</div>
-
-                {barrels?.length > 0 && barrels?.map((barrel, index) => (
-                    <div key={barrel.id} className="barrel-entry border p-2">
-
-                        {/* <div className="player-color" style={{ backgroundColor: player.color }}></div> */}
-
-                        <div className="" style={{ fontSize: "0.6rem" }}>ID: {barrel.id}</div>
-
-                        <div className="player-name d-flex align-items-center">
-                            {barrel.pickedUp ? "Picked Up" : "On Ground"}
-                        </div>
-
-                        <div className="d-flex justify-content-between">
-
-                            <div>X: {barrel?.x?.toFixed(2) || 0} | </div>
-                            {/* <div>Y: {barrel?.y?.toFixed(2) || 0} | </div> */}
-                            <div>Z: {barrel?.z?.toFixed(2) || 0}</div>
-
-                        </div>
-
-                    </div>
+                <Box>Barrels</Box>
+                {barrels?.map((barrel) => (
+                    <Box key={barrel.id} className="barrel-entry" sx={entrySx}>
+                        <Box sx={{ fontSize: "0.6rem" }}>ID: {barrel.id}</Box>
+                        <Box className="player-name">{barrel.pickedUp ? "Picked Up" : "On Ground"}</Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Box>X: {barrel?.x?.toFixed(2) || 0} | </Box>
+                            <Box>Z: {barrel?.z?.toFixed(2) || 0}</Box>
+                        </Box>
+                    </Box>
                 ))}
-
-            </div>
-
-        </div>
-    )
+            </Box>
+        </Box>
+    );
 }
 
 function RoundAndTimer() {
-
-    const gameState = useGameStore(state => state.gameState)
+    const gameState = useGameStore((state) => state.gameState);
 
     return (
-        <div className="d-flex align-items-center w-100 justify-content-between">
-            <div>Round: {gameState?.round || 0}</div>
-            <div>Time: {gameState?.timer || 0}</div>
-        </div>
-    )
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
+            <Box>Round: {gameState?.round || 0}</Box>
+            <Box>Time: {gameState?.timer || 0}</Box>
+        </Box>
+    );
 }

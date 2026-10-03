@@ -7,13 +7,13 @@ import { useStore } from '@/hooks/useStore';
 import GlobalBody from '@articles-media/articles-dev-box/GlobalBody';
 import ToontownModeHandler from '@articles-media/articles-dev-box/ToontownModeHandler';
 import GlobalClientModals from '@articles-media/articles-dev-box/GlobalClientModals';
+import HotkeyHandler from '@articles-media/articles-dev-box/HotkeyHandler';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useAudioStore } from "@/hooks/useAudioStore";
 import { useSocketStore } from "@/hooks/useSocketStore";
 import useTouchControlsStore from "@/hooks/useTouchControlsStore";
 
-export default function LayoutClient({
-
-}) {
+export default function LayoutClient() {
 
     const darkMode = useStore((state) => state.darkMode)
 
@@ -27,6 +27,7 @@ export default function LayoutClient({
                 useStore={useStore}
             />
             <Suspense>
+                <HotkeyHandler useStore={useStore} useHotkeys={useHotkeys} />
                 <GlobalClientModals
                     useStore={useStore}
                     useAudioStore={useAudioStore}
