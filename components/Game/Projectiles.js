@@ -1,82 +1,73 @@
 "use client"
-import { useEffect } from "react"
-import { useSphere } from "@react-three/cannon"
-import { useGameStore } from "@/hooks/useGameStore"
-import { useSocketStore } from "@/hooks/useSocketStore"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useRef } from "react";
+import { BallCollider, RigidBody } from "@react-three/rapier";
+import { useGameStore } from "@/hooks/useGameStore";
+import { useSocketStore } from "@/hooks/useSocketStore";
+import { useSearchParams } from "next/navigation";
+import { PROJECTILE_COLLISION_GROUPS, PROJECTILE_TTL_MS } from "./physics";
 
-const PROJECTILE_TTL = 3000; // ms before auto-remove
-
-// Single physics projectile — removed on collision or TTL expiry
 function Projectile({ id, position, velocity }) {
+    const server = useSearchParams().get("server");
+    const removeProjectile = useGameStore(state => state.removeProjectile);
+    const hasHit = useRef(false);
+    const userData = useMemo(() => ({ isProjectile: true, projectileId: id }), [id]);
 
-    const searchParams = useSearchParams()
-    const params = Object.fromEntries(searchParams.entries());
-    const { server } = params
+    const handleHit = ({ other }) => {
+        const data = other.rigidBodyObject?.userData;
+        if (hasHit.current || data?.isPlayer || data?.isProjectile || data?.isBarrel) return;
+        hasHit.current = true;
 
-    const removeProjectile = useGameStore((state) => state.removeProjectile);
-
-    const [ref, api] = useSphere(() => ({
-        mass: 0.05,
-        type: 'Dynamic',
-        args: [0.12],
-        position: position,
-        // collide with everything except other projectiles (group 8)
-        collisionFilterGroup: 8,
-        collisionFilterMask: ~8,
-        userData: {
-            isProjectile: true,
-            projectileId: id
-        },
-        onCollide: (e) => {
-            // Ignore own player body so the bullet doesn't self-destruct immediately
-            if (e.body.userData.isPlayer) return;
-
-            if (e.body.userData.isSocketEnemy) {
-
-                console.log("HIT SOCKET ENEMY", e.body.userData);
-
-                const socket = useSocketStore.getState().socket;
-                socket?.emit('projectile_hit', {
-                    enemyId: e.body.userData.enemyId,
+        if (data?.isSocketEnemy) {
+            const game = useGameStore.getState();
+            if (game.gameMode === "singleplayer") {
+                game.hitSinglePlayerEnemy(data.enemyId);
+            } else if (server && game.gameState.status === "In Progress") {
+                useSocketStore.getState().socket?.emit("projectile_hit", {
+                    enemyId: data.enemyId,
                     projectileId: id,
-                    server: server
+                    server,
                 });
             }
-
-            removeProjectile(id);
-        },
-    }));
+        }
+        removeProjectile(id);
+    };
 
     useEffect(() => {
-        api.velocity.set(velocity[0], velocity[1], velocity[2]);
-
-        const timer = setTimeout(() => removeProjectile(id), PROJECTILE_TTL);
+        const timer = setTimeout(() => removeProjectile(id), PROJECTILE_TTL_MS);
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [id, removeProjectile]);
 
     return (
-        <mesh ref={ref}>
-            <sphereGeometry args={[0.12, 8, 8]} />
-            <meshStandardMaterial
-                color="#ffcc00"
-                emissive="#ff6600"
-                emissiveIntensity={3}
-                toneMapped={false}
+        <RigidBody
+            position={position}
+            linearVelocity={velocity}
+            gravityScale={0}
+            ccd
+            userData={userData}
+            onCollisionEnter={handleHit}
+            onIntersectionEnter={handleHit}
+        >
+            <BallCollider
+                args={[0.12]}
+                mass={0.05}
+                friction={0}
+                restitution={0}
+                collisionGroups={PROJECTILE_COLLISION_GROUPS}
             />
-        </mesh>
+            <mesh>
+                <sphereGeometry args={[0.12, 8, 8]} />
+                <meshStandardMaterial
+                    color="#ffcc00"
+                    emissive="#ff6600"
+                    emissiveIntensity={3}
+                    toneMapped={false}
+                />
+            </mesh>
+        </RigidBody>
     );
 }
 
 export default function Projectiles() {
-    const projectiles = useGameStore((state) => state.projectiles);
-
-    return (
-        <>
-            {projectiles.map((p) => (
-                <Projectile key={p.id} {...p} />
-            ))}
-        </>
-    );
+    const projectiles = useGameStore(state => state.projectiles);
+    return <>{projectiles.map(projectile => <Projectile key={projectile.id} {...projectile} />)}</>;
 }

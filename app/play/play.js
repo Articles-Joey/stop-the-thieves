@@ -1,5 +1,5 @@
 "use client"
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -9,6 +9,13 @@ import Box from '@mui/material/Box';
 import useFullscreen from '@articles-media/articles-dev-box/useFullscreen';
 
 import LeftPanelContent from '@/components/Game/LeftPanel';
+import ShootingReticle from '@/components/Game/ShootingReticle';
+import EnemyIndicators from '@/components/Game/EnemyIndicators';
+import GameTimer from '@/components/Game/GameTimer';
+import ScoreModal from '@/components/Game/ScoreModal';
+import SinglePlayerGameHandler from '@/components/Handlers/SinglePlayerGameHandler';
+import { useGameStore } from '@/hooks/useGameStore';
+import { useScoreStore } from '@/hooks/useScoreStore';
 import { useSocketStore } from '@/hooks/useSocketStore';
 import { useStore } from '@/hooks/useStore';
 
@@ -21,38 +28,35 @@ const GameCanvas = dynamic(() => import('@/components/Game/GameCanvas'), {
 
 export default function GamePage() {
 
-    const {
-        socket
-    } = useSocketStore(state => ({
-        socket: state.socket
-    }));
+    const enemyIndicatorsRef = useRef(null);
 
     const searchParams = useSearchParams()
     const params = Object.fromEntries(searchParams.entries());
     const { server } = params
 
-    const nickname = useStore(state => state.nickname)
     const sidebar = useStore(state => state.sidebar)
     const sceneKey = useStore(state => state.sceneKey)
     const showMenu = useStore(state => state.showMenu)
+    const nickname = useStore(state => state.nickname)
+    const socket = useSocketStore(state => state.socket)
+    const connected = useSocketStore(state => state.connected)
 
     useEffect(() => {
+        useGameStore.getState().initializeGame(server);
+    }, [server]);
 
-        if (server && socket.connected) {
-            const roomName = `game:${process.env.NEXT_PUBLIC_GAME_KEY}-room-${server}`;
-            socket.emit('join-room', roomName, {
-                game_id: server,
-                nickname: nickname,
-                client_version: '1',
+    useEffect(() => {
+        if (!server || !connected || !socket?.connected) return;
+        const roomName = `game:stop-the-thieves-room-${server}`;
+        socket.emit('join-room', roomName, { game_id: server, nickname, client_version: '1' });
+        return () => {
+            if (socket.connected) socket.emit('leave-room', roomName, { server_id: server });
+        };
+    }, [server, connected, socket, nickname]);
 
-            });
-
-            return function cleanup() {
-                socket.emit('leave-room', roomName)
-            };
-        }
-
-    }, [server, socket.connected, nickname]);
+    useEffect(() => {
+        useScoreStore.persist.rehydrate();
+    }, []);
 
     const { isFullscreen } = useFullscreen();
 
@@ -70,6 +74,9 @@ export default function GamePage() {
             id={`${process.env.NEXT_PUBLIC_GAME_KEY}-game-page`}
             sx={{ position: 'relative', display: 'flex' }}
         >
+
+            {!server && <SinglePlayerGameHandler />}
+            <ScoreModal />
 
             <GameMenu
                 useStore={useStore}
@@ -101,7 +108,11 @@ export default function GamePage() {
 
                 <GameCanvas
                     key={sceneKey}
+                    enemyIndicatorsRef={enemyIndicatorsRef}
                 />
+                <EnemyIndicators ref={enemyIndicatorsRef} />
+                <ShootingReticle />
+                <GameTimer />
 
             </Box>
 

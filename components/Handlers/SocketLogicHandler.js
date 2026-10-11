@@ -1,5 +1,6 @@
 "use client";
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 import { useSocketStore } from "@/hooks/useSocketStore";
 import { useStore } from '@/hooks/useStore';
@@ -7,16 +8,21 @@ import { useGameStore } from '@/hooks/useGameStore';
 
 import ReusedSocketLogicHandler from '@articles-media/articles-dev-box/ReusedSocketLogicHandler';
 
-export default function SocketLogicHandler(props) {
+export default function SocketLogicHandler() {
     const _hasHydrated = useStore((state) => state._hasHydrated);
 
-    // const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const params = Object.fromEntries(searchParams.entries());
     const { server } = params
+    const isSinglePlayer = pathname === '/play' && !server;
+    const disconnectSocket = useSocketStore(state => state.disconnectSocket);
 
-    if (!_hasHydrated) return null;
+    useEffect(() => {
+        if (isSinglePlayer) disconnectSocket();
+    }, [isSinglePlayer, disconnectSocket]);
+
+    if (!_hasHydrated || isSinglePlayer) return null;
 
     return <>
         <ReusedSocketLogicHandler
@@ -36,7 +42,9 @@ export default function SocketLogicHandler(props) {
                 // }
             }}
             gameConfig={{
-                handleGameUpdates: true,
+                // GamePage owns room membership so leave-room includes the
+                // server ID expected by this game's server-side handler.
+                handleGameUpdates: false,
                 // onGameUpdate: (data) => {
                 //     console.log("[SocketLogicHandler] onGameUpdate", data)
                 // }

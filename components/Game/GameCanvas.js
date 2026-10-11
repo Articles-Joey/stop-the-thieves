@@ -1,27 +1,36 @@
-import { createContext, createRef, forwardRef, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense } from "react";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Sky, useDetectGPU, useTexture, OrbitControls, Cylinder, QuadraticBezierLine, Text, Stats } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber"
+import { Sky, Stats } from "@react-three/drei";
 
-import { NearestFilter, RepeatWrapping, TextureLoader, Vector3 } from "three";
-
-import { Debug, Physics, useBox, useSphere } from "@react-three/cannon";
+import { CuboidCollider, Physics, RigidBody } from "@react-three/rapier";
 import { degToRad } from "three/src/math/MathUtils";
 
 import { Player } from "./Player";
 import { FPV } from "./FPV";
-import Enemies from "./Enemies";
 import Barrels from "./Barrels";
 import { PergolaModel } from "./Pergola";
 import { useStore } from "@/hooks/useStore";
+import { useGameStore } from "@/hooks/useGameStore";
 import SocketPlayers from "./SocketPlayers";
 import SocketEnemies from "./SocketEnemies";
+import { EnemyIndicatorTracker } from "./EnemyIndicators";
 import Projectiles from "./Projectiles";
 import PlayerNetworkSync from "./PlayerNetworkSync";
 import { ModelToontownSkybox } from "../Models/ToontownSkybox";
 import GrassPlane from "./GrassPlane";
 import GrassArea from "./GrassArea";
-import ImageRing from "./ImageRing";
+import HillsImageRing from "./HillsImageRing";
+import FenceImageRing from "./FenceImageRing";
+import TreeImageScatter from "./TreeImageScatter";
+
+// An explicit rotation prevents Fiber's default lookAt(0, 0, 0) from
+// tilting the camera before the player takes over its position.
+const INITIAL_CAMERA = {
+    position: [0, 1.3, 0],
+    rotation: [0, 0, 0, "YXZ"],
+    fov: 50,
+};
 
 // const texture = new TextureLoader().load(`${process.env.NEXT_PUBLIC_CDN}games/Race Game/grass.jpg`)
 // const GrassPlane = () => {
@@ -44,17 +53,18 @@ import ImageRing from "./ImageRing";
 //     );
 // };
 
-function GameCanvas(props) {
+function GameCanvas({ enemyIndicatorsRef }) {
 
     // const debugMode = useStore(state => state.debugMode);
     // const toggleDebugMode = useStore(state => state.toggleDebugMode);
     const darkMode = useStore(state => state.darkMode);
     const debug = useStore(state => state.debug);
     const toontownMode = useStore(state => state.toontownMode);
+    const gameMode = useGameStore(state => state.gameMode);
 
     return (
         <Canvas
-            camera={{ position: [-10, 40, 40], fov: 50 }}
+            camera={INITIAL_CAMERA}
             id="game-canvas"
             shadows
         >
@@ -89,7 +99,8 @@ function GameCanvas(props) {
                 <ModelToontownSkybox />
             }
 
-            <ImageRing />
+            <FenceImageRing />
+            <HillsImageRing />
 
             <GrassPlane />
             <GrassArea />
@@ -124,30 +135,29 @@ function GameCanvas(props) {
                 />
             </group>
 
-            <Physics defaultContactMaterial={{ friction: 0, restitution: 0 }}>
+            <Suspense fallback={null}>
+                <Physics gravity={[0, -9.81, 0]} colliders={false} debug={debug}>
 
-                <Debug
-                    scale={debug ? 1 : 0}
-                >
+                    {gameMode === "multiplayer" && <SocketPlayers />}
+                    <SocketEnemies />
 
-                <SocketPlayers />
-                <SocketEnemies />
+                    <Barrels />
 
-                <Barrels />
+                    <Player />
+                    <EnemyIndicatorTracker indicatorsRef={enemyIndicatorsRef} />
 
-                {/* <Enemies /> */}
+                    {gameMode === "multiplayer" && <PlayerNetworkSync />}
 
-                <Player />
+                    <Projectiles />
 
-                <PlayerNetworkSync />
+                    <Ground />
 
-                <Projectiles />
+                </Physics>
+            </Suspense>
 
-                <Ground />
-
-                </Debug>
-
-            </Physics>
+            <Suspense fallback={null}>
+                <TreeImageScatter />
+            </Suspense>
 
         </Canvas>
     )
@@ -159,7 +169,7 @@ const FlatRing = ({ args, color }) => {
     return (
         <mesh
             rotation={[degToRad(-90), 0, 0]}
-            position={[0, 0.28, 0]}
+            position={[0, 0.01, 0]}
         >
             <ringGeometry args={args} /> {/* Inner radius, outer radius, segments */}
             <meshStandardMaterial color={color} /> {/* side={2} makes it visible on both sides */}
@@ -168,29 +178,10 @@ const FlatRing = ({ args, color }) => {
 };
 
 function Ground() {
-
-    const [ref, api] = useBox(() => ({
-        mass: 0,
-        type: 'Static',
-        args: [100, 0.5, 100],
-        position: [0, -0.25, 0],
-    }))
-
-    // const width = 110; // Set the width of the plane
-    // const height = 170; // Set the height of the plane
-
-    // texture.magFilter = NearestFilter;
-    // texture.wrapS = RepeatWrapping
-    // texture.wrapT = RepeatWrapping
-    // texture.repeat.set(5, 5)
-
     return (
-        <mesh ref={ref} castShadow>
-            {/* <boxGeometry args={[100, 0.5, 100]} /> */}
-            {/* <BeachBall /> */}
-            {/* <meshStandardMaterial color="#08e8de" /> */}
-            {/* <meshStandardMaterial attach="material" map={texture} /> */}
-        </mesh>
+        <RigidBody type="fixed" position={[0, -0.25, 0]}>
+            <CuboidCollider args={[50, 0.25, 50]} friction={0} restitution={0} />
+        </RigidBody>
     )
 
 }

@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import ArticlesButton from "@/components/UI/Button";
 import { useStore } from "@/hooks/useStore";
 import GameDetailsPanel from "./GameDetailsPanel";
+import DebugPanel from "./DebugPanel";
 import GameMenuPrimaryButtonGroup from "@articles-media/articles-dev-box/GameMenuPrimaryButtonGroup";
 
 function LeftPanelContent() {
@@ -28,6 +29,7 @@ function LeftPanelContent() {
                 </Box>
             </Box>
             <GameDetailsPanel />
+            {debug && <DebugPanel />}
         </Box>
     );
 }

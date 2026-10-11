@@ -13,7 +13,7 @@ const GrassPlane = () => {
     let width
     let height
 
-    let baseAmount = 300
+    let baseAmount = 50
 
     if (graphicsQuality == 'Low') {
         width = baseAmount

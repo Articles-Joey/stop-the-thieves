@@ -1,12 +1,14 @@
 import { useFrame, useThree } from "@react-three/fiber"
-import { useCompoundBody } from "@react-three/cannon"
-import { useEffect, useRef, useState, memo, useMemo, forwardRef, useImperativeHandle } from "react"
-import { Vector3, Color, MeshStandardMaterial, SphereGeometry } from "three"
+import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier"
+import { useEffect, useRef, useState, memo, forwardRef, useImperativeHandle } from "react"
+import { Vector3 } from "three"
 import { useKeyboard } from "@/hooks/useKeyboard"
 import { useGameStore } from "@/hooks/useGameStore"
 import { useControlsStore } from "@/hooks/useControlsStore"
 import { useSocketStore } from "@/hooks/useSocketStore"
+import { useStore } from "@/hooks/useStore"
 import { Model as SpacesuitModel } from "@/components/Models/Spacesuit"
+import { AIM_DISTANCE, PLAYER_COLLISION_GROUPS, PROJECTILE_COLLISION_GROUPS, PROJECTILE_SPEED, SHOT_COOLDOWN_MS, SHOOTING_STATUSES } from "./physics"
 
 const JUMP_FORCE = 6;
 const SPEED = 4;
@@ -16,18 +18,17 @@ const THIRD_PERSON_MIN_DISTANCE = 2;
 const THIRD_PERSON_MAX_DISTANCE = 20;
 const THIRD_PERSON_DEFAULT_DISTANCE = 6;
 const THIRD_PERSON_HEIGHT = 0.5;
+const THIRD_PERSON_SHOULDER_OFFSET = 0.65;
+const THIRD_PERSON_CAMERA_LIFT = 0.8;
 const CAMERA_GROUND_OFFSET = 0.3;
 const SCROLL_SENSITIVITY = 0.5;
-const KNOCKBACK_DURATION = 500; // ms
-const PROJECTILE_SPEED = 22;
+const PLAYER_USER_DATA = { isPlayer: true };
 
 function PlayerBase() {
 
     const setTopCheckpoint = useGameStore((state) => state.setTopCheckpoint);
     const setPlayer = useGameStore((state) => state.setPlayer);
     const setPosition = useGameStore((state) => state.setPosition);
-    const setSprintMeter = useGameStore((state) => state.setSprintMeter);
-    const position = useGameStore((state) => state.position);
     const setIsThirdPerson = useGameStore((state) => state.setIsThirdPerson);
     const addProjectile = useGameStore((state) => state.addProjectile);
     const setAction = useGameStore((state) => state.setAction);
@@ -35,7 +36,11 @@ function PlayerBase() {
 
     const { moveBackward, moveForward, moveRight, moveLeft, jump, shift, crouch, cameraView } = useKeyboard()
 
-    const { camera } = useThree()
+    const { camera, gl } = useThree()
+    const { world, rapier } = useRapier()
+    const ref = useRef(null)
+    const pos = useRef([0, 1, 0])
+    const vel = useRef([0, 0, 0])
 
     const [action, setLocalAction] = useState("Idle")
     const [isJumping, setIsJumping] = useState(false)
@@ -51,7 +56,7 @@ function PlayerBase() {
     const wasMovingForward = useRef(false)
     const knockbackEndTime = useRef(0)
     const explosionRef = useRef(null)
-    const fireRef = useRef(false)
+    const fireRef = useRef({ mouse: false, keyboard: false, pending: false })
 
     // Sprint state
     const SPRINT_MAX = 1.5       // seconds of sprint energy
@@ -60,70 +65,29 @@ function PlayerBase() {
     const sprintEnergyRef = useRef(SPRINT_MAX)
     const lastSprintActiveRef = useRef(0)  // timestamp of last active sprint frame
 
-    const [ref, api] = useCompoundBody(() => ({
-        mass: 1,
-        type: 'Dynamic',
-        position: [0, 1, 0],
-        fixedRotation: true,
-        angularDamping: 1,
-        linearDamping: 0,
-        userData: { isPlayer: true },
-        shapes: [
-            { type: 'Sphere', args: [0.3], position: [0, 0.4, 0] },
-            { type: 'Sphere', args: [0.3], position: [0, -0.4, 0] },
-            { type: 'Cylinder', args: [0.3, 0.3, 0.8, 8], position: [0, 0, 0] },
-        ],
-        onCollide: (e) => {
-            if (e.body.userData.topCheckpoint) {
-                setTopCheckpoint(true)
-            }
-            // Launch the player when struck by a falling obstacle
-            if (e.body.userData.obstacle) {
-                const isSpikyBall = e.body.userData.spikyBall;
-                const hForce = isSpikyBall ? 28 : 18;
-                const vForce = isSpikyBall ? 20 : 14;
-                const duration = isSpikyBall ? 800 : 500;
-                knockbackEndTime.current = Date.now() + duration;
-                api.velocity.set(
-                    (Math.random() - 0.5) * hForce,
-                    vForce,
-                    (Math.random() - 0.5) * hForce,
-                );
-                if (isSpikyBall && explosionRef.current) {
-                    explosionRef.current.trigger([...pos.current]);
-                }
-            }
-        }
-    }))
+    const handleCollision = ({ other }) => {
+        const data = other.rigidBodyObject?.userData;
+        if (data?.topCheckpoint) setTopCheckpoint?.(true);
+        if (!data?.obstacle) return;
+
+        const isSpikyBall = data.spikyBall;
+        const hForce = isSpikyBall ? 28 : 18;
+        knockbackEndTime.current = Date.now() + (isSpikyBall ? 800 : 500);
+        ref.current?.setLinvel({
+            x: (Math.random() - 0.5) * hForce,
+            y: isSpikyBall ? 20 : 14,
+            z: (Math.random() - 0.5) * hForce,
+        }, true);
+        if (isSpikyBall) explosionRef.current?.trigger([...pos.current]);
+    };
 
     useEffect(() => {
-        // YXZ order = yaw first (world Y), then pitch (local X) — prevents gimbal tilt
-        camera.rotation.order = 'YXZ';
-        setPlayer(ref, api);
-        const unsubscribe = api.position.subscribe((p) => {
-            setPosition([...p]);
-        });
-        return () => unsubscribe();
-    }, [ref, api, setPlayer, setPosition]);
-
-    const vel = useRef([0, 0, 0])
-    useEffect(() => {
-        const unsubscribe = api.velocity.subscribe((v) => vel.current = v)
-        return () => unsubscribe();
-    }, [api.velocity])
-
-    const pos = useRef([0, 0, 0])
-    useEffect(() => {
-        const unsubscribe = api.position.subscribe((p) => {
-            pos.current = p
-            if (p[1] < -25) {
-                api.position.set(0, 5, 0);
-                camera.lookAt(0, 20, 50);
-                api.velocity.set(0, 0, 0);
-            }
-        })
-        return () => unsubscribe();
-    }, [api.position])
+        // Convert to yaw/pitch order while preserving the current orientation.
+        // Assigning .order directly reinterprets the angles and can add roll.
+        camera.rotation.reorder('YXZ');
+        setPlayer(ref, ref.current);
+        return () => setPlayer(null, null);
+    }, [camera, setPlayer]);
 
     // Toggle third-person on key press (not release)
     useEffect(() => {
@@ -138,19 +102,47 @@ function PlayerBase() {
         setIsThirdPerson(isThirdPerson);
     }, [isThirdPerson, setIsThirdPerson])
 
-    // Fire projectile — left mouse click or Enter key
+    // Holding left click or Enter fires at most once per second.
     useEffect(() => {
-        const handleFire = (e) => {
-            if (e.type === 'mousedown' && e.button === 0) fireRef.current = true;
-            if (e.type === 'keydown' && e.code === 'Enter') fireRef.current = true;
+        const handleMouseDown = (e) => {
+            if (e.button === 0 && (e.target === gl.domElement || document.pointerLockElement === gl.domElement)) {
+                fireRef.current.mouse = true;
+                fireRef.current.pending = true;
+            }
         };
-        document.addEventListener('mousedown', handleFire);
-        document.addEventListener('keydown', handleFire);
+        const handleMouseUp = (e) => {
+            if (e.button === 0) fireRef.current.mouse = false;
+        };
+        const handleKeyDown = (e) => {
+            if (e.code === 'Enter' && !e.target.closest?.('input, textarea, select, button, [contenteditable="true"]')) {
+                fireRef.current.keyboard = true;
+                if (!e.repeat) fireRef.current.pending = true;
+            }
+        };
+        const handleKeyUp = (e) => {
+            if (e.code === 'Enter') fireRef.current.keyboard = false;
+        };
+        const resetFire = () => {
+            fireRef.current = { mouse: false, keyboard: false, pending: false };
+        };
+        const handlePointerLock = () => {
+            if (document.pointerLockElement !== gl.domElement) resetFire();
+        };
+        document.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        document.addEventListener('pointerlockchange', handlePointerLock);
+        window.addEventListener('blur', resetFire);
         return () => {
-            document.removeEventListener('mousedown', handleFire);
-            document.removeEventListener('keydown', handleFire);
+            document.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+            document.removeEventListener('pointerlockchange', handlePointerLock);
+            window.removeEventListener('blur', resetFire);
         };
-    }, []);
+    }, [gl]);
 
     // Scroll wheel to adjust third-person camera distance
     useEffect(() => {
@@ -180,60 +172,23 @@ function PlayerBase() {
     }, [moveBackward, moveForward, moveRight, moveLeft, isJumping, shift])
 
     useFrame((_, delta) => {
-
-        // --- Camera ---
-        if (isThirdPerson) {
-            const playerCenter = new Vector3(pos.current[0], pos.current[1] + THIRD_PERSON_HEIGHT, pos.current[2])
-            const forward = new Vector3(0, 0, -1).applyEuler(camera.rotation)
-            const cameraPos = playerCenter.clone().sub(forward.clone().multiplyScalar(cameraDistanceRef.current))
-            if (cameraPos.y < CAMERA_GROUND_OFFSET) cameraPos.y = CAMERA_GROUND_OFFSET;
-            camera.position.copy(cameraPos)
-            camera.lookAt(playerCenter)
-        } else {
-            camera.position.copy(new Vector3(
-                pos.current[0],
-                pos.current[1] / (crouch ? 2 : 1) + 0.3,
-                pos.current[2]
-            ));
+        const body = ref.current;
+        if (!body) return;
+        let translation = body.translation();
+        if (translation.y < -25) {
+            body.setTranslation({ x: 0, y: 5, z: 0 }, true);
+            body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+            translation = body.translation();
         }
+        const velocity = body.linvel();
+        pos.current = [translation.x, translation.y, translation.z];
+        vel.current = [velocity.x, velocity.y, velocity.z];
+        setPosition(pos.current);
 
         // Keep model in sync with physics body even during knockback
         if (modelRef.current) {
             modelRef.current.position.set(pos.current[0], pos.current[1], pos.current[2]);
         }
-
-        // Fire projectile
-        if (fireRef.current) {
-            fireRef.current = false;
-            const dir = new Vector3(0, 0, -1).applyEuler(camera.rotation).normalize();
-            
-            // In first-person, spawn from camera. In third-person, spawn from player model position.
-            const spawnOrigin = isThirdPerson 
-                ? new Vector3(pos.current[0], pos.current[1] + THIRD_PERSON_HEIGHT, pos.current[2])
-                : camera.position;
-
-            const spawnPos = [
-                spawnOrigin.x + dir.x * 1.5,
-                spawnOrigin.y + dir.y * 1.5,
-                spawnOrigin.z + dir.z * 1.5,
-            ];
-            const projId = `${Date.now()}-${Math.random()}`;
-            addProjectile({
-                id: projId,
-                position: spawnPos,
-                velocity: [dir.x * PROJECTILE_SPEED, dir.y * PROJECTILE_SPEED, dir.z * PROJECTILE_SPEED],
-            });
-            const socket = useSocketStore.getState().socket;
-            socket?.emit('projectile_fired', {
-                id: projId,
-                position: spawnPos,
-                direction: [dir.x, dir.y, dir.z],
-                cameraRotation: { x: camera.rotation.x, y: camera.rotation.y },
-            });
-        }
-
-        // Suppress movement control while knockback is active
-        if (Date.now() < knockbackEndTime.current) return;
 
         // --- Gamepad input ---
         const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -276,6 +231,62 @@ function PlayerBase() {
             camera.rotation.z = 0; // prevent roll drift
         }
 
+        // Preserve the look direction independently of the elevated shoulder
+        // position. The player stays below/left of the center aiming reticle.
+        const forward = camera.getWorldDirection(new Vector3());
+        if (isThirdPerson) {
+            const right = new Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            camera.position.set(translation.x, translation.y + THIRD_PERSON_HEIGHT + THIRD_PERSON_CAMERA_LIFT, translation.z);
+            camera.position.addScaledVector(forward, -cameraDistanceRef.current);
+            camera.position.addScaledVector(right, THIRD_PERSON_SHOULDER_OFFSET);
+            camera.position.y = Math.max(CAMERA_GROUND_OFFSET, camera.position.y);
+        } else {
+            camera.position.set(translation.x, translation.y + (crouch ? -0.2 : 0.3), translation.z);
+        }
+
+        const now = performance.now();
+        const game = useGameStore.getState();
+        const menuOpen = useStore.getState().showMenu;
+        const wantsFire = fireRef.current.pending || fireRef.current.mouse || fireRef.current.keyboard || gamepad?.buttons[7]?.pressed;
+        fireRef.current.pending = false;
+        if (menuOpen) fireRef.current = { mouse: false, keyboard: false, pending: false };
+
+        if (!menuOpen && SHOOTING_STATUSES.includes(game.gameState.status) && wantsFire
+            && (game.lastShotAt === null || now - game.lastShotAt >= SHOT_COOLDOWN_MS)) {
+            // Trace through the center of the screen, then converge the shot
+            // from the player's muzzle onto that point instead of the player.
+            const origin = isThirdPerson
+                ? new Vector3(translation.x, translation.y + THIRD_PERSON_HEIGHT, translation.z)
+                : camera.position.clone();
+            // Begin the camera ray just ahead of the muzzle's depth plane so
+            // objects between the camera and player cannot aim a shot backward.
+            const muzzleDepth = Math.max(0, origin.clone().sub(camera.position).dot(forward)) + 0.13;
+            const rayOrigin = camera.position.clone().addScaledVector(forward, muzzleDepth);
+            const ray = new rapier.Ray(rayOrigin, forward);
+            const hit = world.castRay(ray, AIM_DISTANCE, true, undefined, PROJECTILE_COLLISION_GROUPS, undefined, body);
+            const aimPoint = rayOrigin.addScaledVector(forward, hit?.timeOfImpact ?? AIM_DISTANCE);
+            const direction = aimPoint.sub(origin).normalize();
+            // Start at the muzzle: a long spawn offset can skip close enemies.
+            const spawnPos = origin.toArray();
+            const projId = `${Date.now()}-${Math.random()}`;
+            game.setLastShotAt(now);
+            addProjectile({
+                id: projId,
+                position: spawnPos,
+                velocity: direction.clone().multiplyScalar(PROJECTILE_SPEED).toArray(),
+            });
+            if (game.gameMode === 'multiplayer' && game.gameState.status === 'In Progress') useSocketStore.getState().socket?.emit('projectile_fired', {
+                id: projId,
+                server: game.serverId,
+                position: spawnPos,
+                direction: direction.toArray(),
+                cameraRotation: { x: camera.rotation.x, y: camera.rotation.y },
+            });
+        }
+
+        // Camera and aiming keep working while movement is knocked back.
+        if (Date.now() < knockbackEndTime.current) return;
+
         const isSprintingInput = shift || isDoubleTapSprinting.current;
         const frontVector = new Vector3(0, 0, forwardInput);
         const sideVector = new Vector3(sideInput, 0, 0);
@@ -316,10 +327,15 @@ function PlayerBase() {
         direction.y = 0
         direction.normalize().multiplyScalar(SPEED * (isSprinting ? 2 : 1))
 
-        api.velocity.set(direction.x, vel.current[1], direction.z)
+        body.setLinvel({ x: direction.x, y: vel.current[1], z: direction.z }, true)
 
         // --- Ground detection ---
-        if (Math.abs(vel.current[1]) < 0.1) {
+        const groundHit = world.castRay(
+            new rapier.Ray(translation, { x: 0, y: -1, z: 0 }),
+            0.78, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS,
+            PLAYER_COLLISION_GROUPS, undefined, body,
+        );
+        if (groundHit && Math.abs(vel.current[1]) < 0.1) {
             groundedFrames.current++;
         } else {
             groundedFrames.current = 0;
@@ -335,7 +351,7 @@ function PlayerBase() {
         // Jump
         const isJumpingInput = jump || tc.jump || (gamepad?.buttons[0]?.pressed);
         if (isJumpingInput && groundedFrames.current > 2 && !isJumping) {
-            api.velocity.set(vel.current[0], JUMP_FORCE, vel.current[2]);
+            body.setLinvel({ x: direction.x, y: JUMP_FORCE, z: direction.z }, true);
             setIsJumping(true);
             setAction("Jump");
             setLocalAction("Jump");
@@ -345,9 +361,11 @@ function PlayerBase() {
             if (tc.jump) useControlsStore.getState().setTouchControls({ jump: false });
         }
 
-        // Update model rotation based on movement direction
-        if (modelRef.current && isMoving) {
-            const angle = Math.atan2(direction.x, direction.z)
+        // In third person the player faces the reticle while moving sideways
+        // or backward. First-person movement retains its existing model heading.
+        if (modelRef.current && (isMoving || isThirdPerson)) {
+            const facing = isThirdPerson ? forward : direction;
+            const angle = Math.atan2(facing.x, facing.z)
             modelRef.current.rotation.y = angle
             useGameStore.getState().setModelRotation([0, angle, 0])
         }
@@ -356,7 +374,24 @@ function PlayerBase() {
 
     return (
         <>
-            <mesh ref={ref} />
+            <RigidBody
+                ref={ref}
+                position={[0, 1, 0]}
+                lockRotations
+                canSleep={false}
+                ccd
+                userData={PLAYER_USER_DATA}
+                onCollisionEnter={handleCollision}
+                onIntersectionEnter={handleCollision}
+            >
+                <CapsuleCollider
+                    args={[0.4, 0.3]}
+                    mass={1}
+                    friction={0}
+                    restitution={0}
+                    collisionGroups={PLAYER_COLLISION_GROUPS}
+                />
+            </RigidBody>
             <Explosion ref={explosionRef} />
             <group ref={modelRef} visible={isThirdPerson}>
                 <SpacesuitModel

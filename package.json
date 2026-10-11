@@ -1,7 +1,7 @@
 {
   "name": "stop-the-thieves",
   "description": "Stop the incomings thieves from taking your loot!",
-  "version": "0.5.0",
+  "version": "0.9.0",
   "private": false,
   "homepage": "https://stop-the-thieves.articles.media",
   "packageManager": "pnpm@12.0.0",
@@ -9,7 +9,7 @@
     "dev": "next dev -p 3039",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint",
     "format": "prettier . --write"
   },
   "dependencies": {
@@ -21,12 +21,13 @@
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
     "@mui/material-nextjs": "^9.4.0",
-    "@react-three/cannon": "^6.6.0",
+    "@react-three/csg": "^4.0.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.8.1",
+    "@react-three/rapier": "^2.2.0",
     "classnames": "^2.5.1",
     "date-fns": "^4.4.0",
-    "next": "^16.3.8",
+    "next": "^16.4.0",
     "nipplejs": "^0.10.2",
     "react": "^19.3.0",
     "react-countdown": "^2.3.6",
@@ -42,7 +43,7 @@
     "@eslint/eslintrc": "^3",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.8",
+    "eslint-config-next": "^16.4.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6"
   }

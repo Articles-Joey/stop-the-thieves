@@ -64,7 +64,7 @@ function createBladeGeometry() {
     return geometry;
 }
 
-export default function GrassArea({ inner = 1, outer = 150, count = 16000 }) {
+export default function GrassArea({ inner = 1, outer = 25, count = 16000 }) {
 
     const graphicsQuality = useStore(state => state.graphicsQuality);    
 
@@ -89,21 +89,26 @@ export default function GrassArea({ inner = 1, outer = 150, count = 16000 }) {
         const mesh = meshRef.current;
         if (!mesh) return;
         const dummy = new Object3D();
+        // Leave room inside the fence for blade width and the animated sway.
+        const spawnRadius = Math.max(inner, outer - 0.4);
         for (let i = 0; i < bladeCount; i++) {
-            // Random position in the square annulus (outside inner, inside outer)
-            let x, z;
-            do {
-                x = (Math.random() * 2 - 1) * outer;
-                z = (Math.random() * 2 - 1) * outer;
-            } while (Math.abs(x) < inner && Math.abs(z) < inner);
+            // Uniform coverage of the circular area inside the fence.
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.sqrt(inner * inner + Math.random() * (spawnRadius * spawnRadius - inner * inner));
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
 
             dummy.position.set(x, 0, z);
             dummy.rotation.y = Math.random() * Math.PI * 2;
-            dummy.scale.setScalar(0.7 + Math.random() * 0.8);
+            // Previous maximum: 0.8 * 1.5 = 1.2; now capped at 0.8 * 0.75 = 0.6.
+            const heightScale = 0.25 + Math.random() * 0.5;
+            const widthScale = 0.5 + Math.random() * 0.8;
+            dummy.scale.set(widthScale, heightScale, widthScale);
             dummy.updateMatrix();
             mesh.setMatrixAt(i, dummy.matrix);
         }
         mesh.instanceMatrix.needsUpdate = true;
+        mesh.computeBoundingSphere();
     }, [bladeCount, inner, outer]);
 
     useFrame(({ clock }) => {

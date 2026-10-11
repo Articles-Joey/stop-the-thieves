@@ -23,6 +23,8 @@ export default function PlayerNetworkSync() {
     });
 
     useFrame((_, delta) => {
+        const game = useGameStore.getState();
+        if (!server || game.gameMode !== "multiplayer" || game.gameState.status !== "In Progress") return;
         accumulator.current += delta;
         if (accumulator.current < SEND_RATE) return;
         accumulator.current = 0;
