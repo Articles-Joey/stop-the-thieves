@@ -1,33 +1,31 @@
 "use client";
 import { Suspense } from "react";
-import packageInfo from '@/package.json';
+import packageInfo from "@/package.json";
 
 import DarkModeHandler from "@articles-media/articles-dev-box/DarkModeHandler";
-import { useStore } from '@/hooks/useStore';
-import GlobalBody from '@articles-media/articles-dev-box/GlobalBody';
-import ToontownModeHandler from '@articles-media/articles-dev-box/ToontownModeHandler';
-import GlobalClientModals from '@articles-media/articles-dev-box/GlobalClientModals';
-import HotkeyHandler from '@articles-media/articles-dev-box/HotkeyHandler';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { useStore } from "@/hooks/useStore";
+import GlobalBody from "@articles-media/articles-dev-box/GlobalBody";
+import ToontownModeHandler from "@articles-media/articles-dev-box/ToontownModeHandler";
+import GlobalClientModals from "@articles-media/articles-dev-box/GlobalClientModals";
+import HotkeyHandler from "@articles-media/articles-dev-box/HotkeyHandler";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useAudioStore } from "@/hooks/useAudioStore";
 import { useSocketStore } from "@/hooks/useSocketStore";
 import useTouchControlsStore from "@/hooks/useTouchControlsStore";
 
 export default function LayoutClient() {
-
-    const darkMode = useStore((state) => state.darkMode)
+    const darkMode = useStore((state) => state.darkMode);
 
     return (
         <>
-            <ToontownModeHandler
-                useStore={useStore}
-            />
+            <ToontownModeHandler useStore={useStore} />
             <GlobalBody />
-            <DarkModeHandler
-                useStore={useStore}
-            />
+            <DarkModeHandler useStore={useStore} />
             <Suspense>
-                <HotkeyHandler useStore={useStore} useHotkeys={useHotkeys} />
+                <HotkeyHandler
+                    useStore={useStore}
+                    useHotkeys={useHotkeys}
+                />
                 <GlobalClientModals
                     useStore={useStore}
                     useAudioStore={useAudioStore}
@@ -36,24 +34,38 @@ export default function LayoutClient() {
                     packageInfo={packageInfo}
                     settingsModalConfig={{
                         tabs: {
-                            'Graphics': {
+                            Graphics: {
                                 darkMode: true,
                                 landingAnimation: true,
-                                children: <>
-                                </>,
+                                children: <></>,
                             },
-                            'Audio': {
+                            Audio: {
                                 sliders: [
-                                    ...useAudioStore.getState().audioSettings ?
-                                        Object.keys(useAudioStore.getState().audioSettings).filter(key => key !== "enabled").map(key => ({
-                                            key,
-                                            label: key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-                                        }))
-                                        :
-                                        [],
-                                ]
+                                    ...(useAudioStore.getState().audioSettings
+                                        ? Object.keys(
+                                              useAudioStore.getState()
+                                                  .audioSettings,
+                                          )
+                                              .filter(
+                                                  (key) => key !== "enabled",
+                                              )
+                                              .map((key) => ({
+                                                  key,
+                                                  label: key
+                                                      .split("_")
+                                                      .map(
+                                                          (word) =>
+                                                              word
+                                                                  .charAt(0)
+                                                                  .toUpperCase() +
+                                                              word.slice(1),
+                                                      )
+                                                      .join(" "),
+                                              }))
+                                        : []),
+                                ],
                             },
-                            'Controls': {
+                            Controls: {
                                 touchControls: true,
                                 // defaultKeyBindings: {
                                 //     // moveUp: "W",
@@ -62,26 +74,24 @@ export default function LayoutClient() {
                                 //     // moveRight: "D",
                                 // }
                             },
-                            'Multiplayer': {
+                            Multiplayer: {
                                 serverUrl: true,
                                 // children: <>Test</>
                             },
-                            'Other': {
+                            Other: {
                                 toontownMode: true,
-                                children: <>
-
-                                </>,
-                            }
+                                children: <></>,
+                            },
                         },
                         reset: () => {
                             useAudioStore.getState().resetAudioSettings();
-                        }
+                        },
                     }}
                     infoModalConfig={{
-                        previewImage: darkMode ? "img/preview.webp" : "img/preview.webp",
-                        appendContent: <>
-
-                        </>
+                        previewImage: darkMode
+                            ? "img/preview.webp"
+                            : "img/preview.webp",
+                        appendContent: <></>,
                     }}
                 />
             </Suspense>

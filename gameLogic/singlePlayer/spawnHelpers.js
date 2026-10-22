@@ -1,7 +1,9 @@
 import { BARREL_POSITIONS, ESCAPE_RADIUS, SPAWN_RADIUS } from "./constants";
 
 function makeId() {
-    return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    return (
+        globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+    );
 }
 
 export function spawnEnemy() {

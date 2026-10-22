@@ -34,9 +34,16 @@ export function moveEnemies(game, seconds, speed = ENEMY_SPEED) {
     const step = speed * seconds;
     for (let index = 0; index < game.enemies.length; index++) {
         const enemy = game.enemies[index];
-        const carried = game.barrels.find(barrel => barrel.pickedUpBy === enemy.id);
+        const carried = game.barrels.find(
+            (barrel) => barrel.pickedUpBy === enemy.id,
+        );
         if (carried) {
-            const reachedExit = moveToward(enemy, enemy.escapeX, enemy.escapeZ, step);
+            const reachedExit = moveToward(
+                enemy,
+                enemy.escapeX,
+                enemy.escapeZ,
+                step,
+            );
             carried.x = enemy.x;
             carried.z = enemy.z;
             if (reachedExit) {
@@ -50,7 +57,12 @@ export function moveEnemies(game, seconds, speed = ENEMY_SPEED) {
             continue;
         }
 
-        let target = game.barrels.find(barrel => barrel.id === enemy.targetBarrelId && !barrel.pickedUp && !barrel.stolen);
+        let target = game.barrels.find(
+            (barrel) =>
+                barrel.id === enemy.targetBarrelId &&
+                !barrel.pickedUp &&
+                !barrel.stolen,
+        );
         if (!target) target = findNearestUnpickedBarrel(game, enemy);
         enemy.targetBarrelId = target?.id ?? null;
         enemy.moving = false;
@@ -65,12 +77,20 @@ export function moveEnemies(game, seconds, speed = ENEMY_SPEED) {
 }
 
 export function resetHitEnemy(game, enemyId) {
-    if (game.status !== "In Progress" || !game.enemies.some(enemy => enemy.id === enemyId)) return game;
+    if (
+        game.status !== "In Progress" ||
+        !game.enemies.some((enemy) => enemy.id === enemyId)
+    )
+        return game;
     return {
         ...game,
-        enemies: game.enemies.map(enemy => enemy.id === enemyId ? spawnEnemy() : enemy),
-        barrels: game.barrels.map(barrel => barrel.pickedUpBy === enemyId
-            ? { ...barrel, pickedUp: false, pickedUpBy: null }
-            : barrel),
+        enemies: game.enemies.map((enemy) =>
+            enemy.id === enemyId ? spawnEnemy() : enemy,
+        ),
+        barrels: game.barrels.map((barrel) =>
+            barrel.pickedUpBy === enemyId
+                ? { ...barrel, pickedUp: false, pickedUpBy: null }
+                : barrel,
+        ),
     };
 }

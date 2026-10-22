@@ -32,20 +32,25 @@ export function createAppTheme(mode = "dark") {
             MuiAlert: {
                 styleOverrides: {
                     root: {
-                        variants: [{
-                            props: { severity: "info" },
-                            style: { backgroundColor: "#60a5fa" },
-                        }],
+                        variants: [
+                            {
+                                props: { severity: "info" },
+                                style: { backgroundColor: "#60a5fa" },
+                            },
+                        ],
                     },
                 },
             },
             MuiCssBaseline: {
                 // Dev-box still uses these compatibility utilities internally.
                 styleOverrides: (muiTheme) => ({
-                    ...bootstrapCompatibilityTheme.MuiCssBaseline.styleOverrides(muiTheme),
+                    ...bootstrapCompatibilityTheme.MuiCssBaseline.styleOverrides(
+                        muiTheme,
+                    ),
                     ":root": {
                         "--card-background-override": cardBackground,
-                        "--articles-card-font-color": mode === "dark" ? "#fff" : "#212529",
+                        "--articles-card-font-color":
+                            mode === "dark" ? "#fff" : "#212529",
                     },
                     ".stats-overlay": {
                         position: "fixed",
@@ -55,9 +60,9 @@ export function createAppTheme(mode = "dark") {
                         zIndex: 4,
                     },
                     '[data-articles-dev-box-screenshot-mode="enabled"] .stats-overlay':
-                    {
-                        display: "none !important",
-                    },
+                        {
+                            display: "none !important",
+                        },
                 }),
             },
         },

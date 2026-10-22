@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferAttribute, BufferGeometry, DoubleSide, Object3D, ShaderMaterial } from "three";
+import {
+    BufferAttribute,
+    BufferGeometry,
+    DoubleSide,
+    Object3D,
+    ShaderMaterial,
+} from "three";
 import { useStore } from "@/hooks/useStore";
 
-const vertexShader = /* glsl */`
+const vertexShader = /* glsl */ `
     varying vec2 vUv;
     uniform float time;
 
@@ -22,14 +28,15 @@ const vertexShader = /* glsl */`
     }
 `;
 
-const fragmentShader = /* glsl */`
+const fragmentShader = /* glsl */ `
     varying vec2 vUv;
+    uniform float brightness;
 
     void main() {
         vec3 baseColor = vec3(0.08, 0.35, 0.08);
         vec3 tipColor  = vec3(0.38, 0.68, 0.18);
         vec3 color = mix(baseColor, tipColor, vUv.y);
-        gl_FragColor = vec4(color, 1.0);
+        gl_FragColor = vec4(color * brightness, 1.0);
     }
 `;
 
@@ -40,50 +47,62 @@ function createBladeGeometry() {
 
     // 5 verts: base-left, base-right, mid-left, mid-right, tip
     const positions = new Float32Array([
-        -w,         0,       0,
-         w,         0,       0,
-        -w * 0.5,   h * 0.5, 0,
-         w * 0.5,   h * 0.5, 0,
-         0,         h,       0,
+        -w,
+        0,
+        0,
+        w,
+        0,
+        0,
+        -w * 0.5,
+        h * 0.5,
+        0,
+        w * 0.5,
+        h * 0.5,
+        0,
+        0,
+        h,
+        0,
     ]);
 
-    const uvs = new Float32Array([
-        0,   0,
-        1,   0,
-        0,   0.5,
-        1,   0.5,
-        0.5, 1,
-    ]);
+    const uvs = new Float32Array([0, 0, 1, 0, 0, 0.5, 1, 0.5, 0.5, 1]);
 
-    const indices = [0, 1, 2,  1, 3, 2,  2, 3, 4];
+    const indices = [0, 1, 2, 1, 3, 2, 2, 3, 4];
 
-    geometry.setAttribute('position', new BufferAttribute(positions, 3));
-    geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
+    geometry.setAttribute("position", new BufferAttribute(positions, 3));
+    geometry.setAttribute("uv", new BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
     return geometry;
 }
 
 export default function GrassArea({ inner = 1, outer = 25, count = 16000 }) {
-
-    const graphicsQuality = useStore(state => state.graphicsQuality);    
+    const graphicsQuality = useStore((state) => state.graphicsQuality);
+    const darkMode = useStore((state) => state.darkMode);
 
     const bladeCount = useMemo(() => {
-        if (graphicsQuality === 'Low')    return Math.floor(count * 0.15);
-        if (graphicsQuality === 'Medium') return Math.floor(count * 0.5);
+        if (graphicsQuality === "Low") return Math.floor(count * 0.15);
+        if (graphicsQuality === "Medium") return Math.floor(count * 0.5);
         return count;
     }, [count, graphicsQuality]);
 
     const geometry = useMemo(() => createBladeGeometry(), []);
 
-    const material = useMemo(() => new ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms: { time: { value: 0 } },
-        side: DoubleSide,
-    }), []);
+    const material = useMemo(
+        () =>
+            new ShaderMaterial({
+                vertexShader,
+                fragmentShader,
+                uniforms: { time: { value: 0 }, brightness: { value: 1 } },
+                side: DoubleSide,
+            }),
+        [],
+    );
 
     const meshRef = useRef();
+
+    useEffect(() => {
+        material.uniforms.brightness.value = darkMode ? 0.3 : 1;
+    }, [darkMode, material]);
 
     useEffect(() => {
         const mesh = meshRef.current;
@@ -94,7 +113,10 @@ export default function GrassArea({ inner = 1, outer = 25, count = 16000 }) {
         for (let i = 0; i < bladeCount; i++) {
             // Uniform coverage of the circular area inside the fence.
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.sqrt(inner * inner + Math.random() * (spawnRadius * spawnRadius - inner * inner));
+            const radius = Math.sqrt(
+                inner * inner +
+                    Math.random() * (spawnRadius * spawnRadius - inner * inner),
+            );
             const x = Math.cos(angle) * radius;
             const z = Math.sin(angle) * radius;
 
@@ -112,16 +134,18 @@ export default function GrassArea({ inner = 1, outer = 25, count = 16000 }) {
     }, [bladeCount, inner, outer]);
 
     useFrame(({ clock }) => {
-
-        if (graphicsQuality === 'Low') return
+        if (graphicsQuality === "Low") return;
 
         material.uniforms.time.value = clock.getElapsedTime();
-
     });
 
-    if (graphicsQuality === 'Low') return
+    if (graphicsQuality === "Low") return;
 
     return (
-        <instancedMesh ref={meshRef} args={[geometry, material, bladeCount]} frustumCulled />
+        <instancedMesh
+            ref={meshRef}
+            args={[geometry, material, bladeCount]}
+            frustumCulled
+        />
     );
 }

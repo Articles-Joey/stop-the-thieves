@@ -4,44 +4,53 @@ Command: npx gltfjsx@6.5.3 ToontownSkybox.glb -T
 Files: ToontownSkybox.glb [104.81KB] > F:\My Documents\Sites games\stop-the-thieves\public\models\ToontownSkybox-transformed.glb [21.66KB] (79%)
 */
 
-import React, { useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import React, { useRef } from "react";
+import { useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 
 const ROTATION_SPEED = 0.01; // radians per second
 
 export function ModelToontownSkybox(props) {
-  const { nodes, materials } = useGLTF('models/ToontownSkybox-transformed.glb')
-  const rotationRef = useRef(null)
+    const { nodes, materials } = useGLTF(
+        "/models/ToontownSkybox-transformed.glb",
+    );
+    const rotationRef = useRef(null);
 
-  useFrame((_, delta) => {
-    if (rotationRef.current) {
-      rotationRef.current.rotation.y = (rotationRef.current.rotation.y + delta * ROTATION_SPEED) % (Math.PI * 2)
-    }
-  })
+    useFrame((_, delta) => {
+        if (rotationRef.current) {
+            rotationRef.current.rotation.y =
+                (rotationRef.current.rotation.y + delta * ROTATION_SPEED) %
+                (Math.PI * 2);
+        }
+    });
 
-  return (
-    <group {...props} dispose={null}>
-      <group ref={rotationRef}>
-        <group rotation={[Math.PI / 2, 0, 0]}>
-          {/* The opaque blue shell needs depth writes so the procedural Sky cannot overwrite it. */}
-          <mesh
-            geometry={nodes.TT_sky_1.geometry}
-            material={materials.middayskyB}
-            material-depthWrite={true}
-            renderOrder={-2}
-          />
-          {/* Transparent clouds stay behind hills (-1) and trees (0), without writing depth. */}
-          <mesh
-            geometry={nodes.TT_sky_2.geometry}
-            material={materials.toontown_central_tutorial_palette_4amla_1}
-            material-depthWrite={false}
-            renderOrder={-2}
-          />
+    return (
+        <group
+            {...props}
+            dispose={null}
+        >
+            <group ref={rotationRef}>
+                <group rotation={[Math.PI / 2, 0, 0]}>
+                    {/* Keep the opaque blue shell's depth; transparent clouds render before the hills. */}
+                    <mesh
+                        geometry={nodes.TT_sky_1.geometry}
+                        material={materials.middayskyB}
+                        material-depthWrite={true}
+                        renderOrder={-2}
+                    />
+                    {/* Transparent clouds stay behind hills (-1) and trees (0), without writing depth. */}
+                    <mesh
+                        geometry={nodes.TT_sky_2.geometry}
+                        material={
+                            materials.toontown_central_tutorial_palette_4amla_1
+                        }
+                        material-depthWrite={false}
+                        renderOrder={-2}
+                    />
+                </group>
+            </group>
         </group>
-      </group>
-    </group>
-  )
+    );
 }
 
-useGLTF.preload('models/ToontownSkybox-transformed.glb')
+useGLTF.preload("/models/ToontownSkybox-transformed.glb");

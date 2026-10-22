@@ -13,8 +13,14 @@ export function useStartGame() {
             useStore.getState().reloadScene();
         } else {
             const socket = useSocketStore.getState().socket;
-            if (!socket?.connected || !["In Lobby", "Game Over"].includes(game.gameState.status)) return;
-            socket.emit("game:stop-the-thieves:start-game", { server_id: game.serverId });
+            if (
+                !socket?.connected ||
+                !["In Lobby", "Game Over"].includes(game.gameState.status)
+            )
+                return;
+            socket.emit("game:stop-the-thieves:start-game", {
+                server_id: game.serverId,
+            });
         }
         useStore.getState().setShowMenu(false);
     }, []);

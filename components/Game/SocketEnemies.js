@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useRef } from "react";
-import { BallCollider, RigidBody } from "@react-three/rapier";
+import { Suspense, useEffect, useMemo, useRef } from "react";
+import { CapsuleCollider, RigidBody } from "@react-three/rapier";
 import { useGameStore } from "@/hooks/useGameStore";
+import { useStore } from "@/hooks/useStore";
 import { Model as SpacesuitModel } from "@/components/Models/Spacesuit";
+import { CogCharacter } from "@/components/Models/CogCharacter";
+import { CHARACTER_CAPSULE_ARGS, CHARACTER_CENTER_HEIGHT } from "./physics";
 
 export default function SocketEnemies() {
-    const enemies = useGameStore(state => state.gameState.enemies);
+    const enemies = useGameStore((state) => state.gameState.enemies);
 
     return (
         <group>
-            {enemies?.map(player => (
-                <SocketEnemy key={player.id} player={player} />
+            {enemies?.map((player) => (
+                <SocketEnemy
+                    key={player.id}
+                    player={player}
+                />
             ))}
         </group>
     );
@@ -17,13 +23,21 @@ export default function SocketEnemies() {
 
 function SocketEnemy({ player }) {
     const ref = useRef(null);
-    const userData = useMemo(() => ({
-        isSocketEnemy: true, enemyId: player.id, serverId: player.id,
-    }), [player.id]);
+    const toontownMode = useStore((state) => state.toontownMode);
+    const userData = useMemo(
+        () => ({
+            isSocketEnemy: true,
+            enemyId: player.id,
+            serverId: player.id,
+        }),
+        [player.id],
+    );
 
     useEffect(() => {
         ref.current?.setNextKinematicTranslation({
-            x: player.x || 0, y: 0.75, z: player.z || 0,
+            x: player.x || 0,
+            y: CHARACTER_CENTER_HEIGHT,
+            z: player.z || 0,
         });
     }, [player.x, player.z]);
 
@@ -31,16 +45,33 @@ function SocketEnemy({ player }) {
         <RigidBody
             ref={ref}
             type="kinematicPosition"
-            position={[player.x || 0, 0.75, player.z || 0]}
+            colliders={false}
+            position={[player.x || 0, CHARACTER_CENTER_HEIGHT, player.z || 0]}
             userData={userData}
         >
-            <BallCollider args={[0.5]} friction={0} restitution={0} />
-            <SpacesuitModel
-                position={[0, -0.5, 0]}
-                rotation={[0, player.rotationY || 0, 0]}
-                action={player.moving ? "Walk" : "Idle"}
-                scale={0.75}
+            <CapsuleCollider
+                args={CHARACTER_CAPSULE_ARGS}
+                friction={0}
+                restitution={0}
             />
+            <group
+                rotation={[0, player.rotationY || 0, 0]}
+                position={[0, -CHARACTER_CENTER_HEIGHT, 0]}
+            >
+                <Suspense fallback={null}>
+                    {toontownMode ? (
+                        <CogCharacter
+                            scale={0.35}
+                            action={player.moving ? "Walk" : "Idle"}
+                        />
+                    ) : (
+                        <SpacesuitModel
+                            scale={0.75}
+                            action={player.moving ? "Walk" : "Idle"}
+                        />
+                    )}
+                </Suspense>
+            </group>
         </RigidBody>
     );
 }

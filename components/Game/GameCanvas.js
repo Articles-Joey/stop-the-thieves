@@ -1,7 +1,7 @@
 import { memo, Suspense } from "react";
 
-import { Canvas } from "@react-three/fiber"
-import { Sky, Stats } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import { Stats } from "@react-three/drei";
 
 import { CuboidCollider, Physics, RigidBody } from "@react-three/rapier";
 import { degToRad } from "three/src/math/MathUtils";
@@ -18,6 +18,7 @@ import { EnemyIndicatorTracker } from "./EnemyIndicators";
 import Projectiles from "./Projectiles";
 import PlayerNetworkSync from "./PlayerNetworkSync";
 import { ModelToontownSkybox } from "../Models/ToontownSkybox";
+import NightSkybox from "../Models/NightSkybox";
 import GrassPlane from "./GrassPlane";
 import GrassArea from "./GrassArea";
 import HillsImageRing from "./HillsImageRing";
@@ -54,13 +55,11 @@ const INITIAL_CAMERA = {
 // };
 
 function GameCanvas({ enemyIndicatorsRef }) {
-
     // const debugMode = useStore(state => state.debugMode);
     // const toggleDebugMode = useStore(state => state.toggleDebugMode);
-    const darkMode = useStore(state => state.darkMode);
-    const debug = useStore(state => state.debug);
-    const toontownMode = useStore(state => state.toontownMode);
-    const gameMode = useGameStore(state => state.gameMode);
+    const darkMode = useStore((state) => state.darkMode);
+    const debug = useStore((state) => state.debug);
+    const gameMode = useGameStore((state) => state.gameMode);
 
     return (
         <Canvas
@@ -68,43 +67,37 @@ function GameCanvas({ enemyIndicatorsRef }) {
             id="game-canvas"
             shadows
         >
-
             {/* <OrbitControls
                 // autoRotate={gameState?.status == 'In Lobby'}
             /> */}
 
-            {process.env.NODE_ENV === 'development' && <>
-                <Stats className="stats-overlay" />
-            </>}
+            {process.env.NODE_ENV === "development" && (
+                <>
+                    <Stats className="stats-overlay" />
+                </>
+            )}
 
-            {darkMode ?
-                <>
-                    <Sky
-                        sunPosition={[0, -1, 0]}
-                    />
-                    <ambientLight intensity={1} />
-                </>
-                :
-                <>
-                    <Sky
-                        sunPosition={[0, 1, 0]}
-                    />
-                    <ambientLight intensity={5} />
-                </>
-            }
+            <ambientLight intensity={darkMode ? 0.7 : 5} />
+            {darkMode && (
+                <directionalLight
+                    position={[12, 24, 8]}
+                    color="#b0c5ff"
+                    intensity={0.6}
+                />
+            )}
 
             <FPV />
 
-            {toontownMode && 
-                <ModelToontownSkybox />
-            }
+            <Suspense fallback={null}>
+                {darkMode ? <NightSkybox /> : <ModelToontownSkybox />}
+            </Suspense>
 
             <FenceImageRing />
             <HillsImageRing />
 
             <GrassPlane />
             <GrassArea />
-            
+
             {/* <spotLight intensity={30000} position={[-50, 100, 50]} angle={5} penumbra={1} /> */}
 
             <FlatRing
@@ -136,8 +129,11 @@ function GameCanvas({ enemyIndicatorsRef }) {
             </group>
 
             <Suspense fallback={null}>
-                <Physics gravity={[0, -9.81, 0]} colliders={false} debug={debug}>
-
+                <Physics
+                    gravity={[0, -9.81, 0]}
+                    colliders={false}
+                    debug={debug}
+                >
                     {gameMode === "multiplayer" && <SocketPlayers />}
                     <SocketEnemies />
 
@@ -151,19 +147,17 @@ function GameCanvas({ enemyIndicatorsRef }) {
                     <Projectiles />
 
                     <Ground />
-
                 </Physics>
             </Suspense>
 
             <Suspense fallback={null}>
                 <TreeImageScatter />
             </Suspense>
-
         </Canvas>
-    )
+    );
 }
 
-export default memo(GameCanvas)
+export default memo(GameCanvas);
 
 const FlatRing = ({ args, color }) => {
     return (
@@ -171,17 +165,25 @@ const FlatRing = ({ args, color }) => {
             rotation={[degToRad(-90), 0, 0]}
             position={[0, 0.01, 0]}
         >
-            <ringGeometry args={args} /> {/* Inner radius, outer radius, segments */}
-            <meshStandardMaterial color={color} /> {/* side={2} makes it visible on both sides */}
+            <ringGeometry args={args} />{" "}
+            {/* Inner radius, outer radius, segments */}
+            <meshStandardMaterial color={color} />{" "}
+            {/* side={2} makes it visible on both sides */}
         </mesh>
     );
 };
 
 function Ground() {
     return (
-        <RigidBody type="fixed" position={[0, -0.25, 0]}>
-            <CuboidCollider args={[50, 0.25, 50]} friction={0} restitution={0} />
+        <RigidBody
+            type="fixed"
+            position={[0, -0.25, 0]}
+        >
+            <CuboidCollider
+                args={[50, 0.25, 50]}
+                friction={0}
+                restitution={0}
+            />
         </RigidBody>
-    )
-
+    );
 }

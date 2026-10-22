@@ -15,6 +15,8 @@ import useUserToken from "@articles-media/articles-dev-box/useUserToken";
 import NicknameInput from "@articles-media/articles-dev-box/NicknameInput";
 import GameMenuPrimaryButtonGroup from "@articles-media/articles-dev-box/GameMenuPrimaryButtonGroup";
 import SessionButton from "@articles-media/articles-dev-box/SessionButton";
+import { useAudioStore } from "@/hooks/useAudioStore";
+import { useRouter } from "next/navigation";
 
 const ReturnToLauncherButton = dynamic(
     () => import("@articles-media/articles-dev-box/ReturnToLauncherButton"),
@@ -24,13 +26,17 @@ const GameScoreboard = dynamic(
     () => import("@articles-media/articles-dev-box/GameScoreboard"),
     { ssr: false },
 );
-const Ad = dynamic(() => import("@articles-media/articles-dev-box/Ad"), { ssr: false });
+const Ad = dynamic(() => import("@articles-media/articles-dev-box/Ad"), {
+    ssr: false,
+});
 
 export default function LobbyPage() {
     const darkMode = useStore((state) => state.darkMode);
     const lobbyDetails = useStore((state) => state.lobbyDetails);
     const { data: userToken } = useUserToken(process.env.NEXT_PUBLIC_GAME_PORT);
-    const { data: userDetails, isLoading: userDetailsLoading } = useUserDetails({ token: userToken });
+    const { data: userDetails, isLoading: userDetailsLoading } = useUserDetails(
+        { token: userToken },
+    );
 
     return (
         <Suspense>
@@ -46,7 +52,9 @@ export default function LobbyPage() {
                     minHeight: "100vh",
                     "& .ad-wrap": {
                         mt: "1rem",
-                        boxShadow: darkMode ? "0px 0px 34px -10px #a7eefc" : undefined,
+                        boxShadow: darkMode
+                            ? "0px 0px 34px -10px #a7eefc"
+                            : undefined,
                         "@media (min-width: 992px)": {
                             mt: 0,
                             display: "block",
@@ -58,13 +66,21 @@ export default function LobbyPage() {
                     },
                     // Scoreboard and session cards are rendered inside dev-box.
                     "& .card": {
-                        boxShadow: darkMode ? "0px 0px 34px -10px #a7eefc" : undefined,
+                        boxShadow: darkMode
+                            ? "0px 0px 34px -10px #a7eefc"
+                            : undefined,
                     },
                 }}
             >
                 <Box
                     className="background-wrap"
-                    sx={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: -1 }}
+                    sx={{
+                        position: "fixed",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        zIndex: -1,
+                    }}
                 >
                     <Image
                         src={`${process.env.NEXT_PUBLIC_CDN}games/Stop the Thiefs/cog-thief-toontown-thumbnail.webp`}
@@ -90,14 +106,28 @@ export default function LobbyPage() {
                         alignItems: "center",
                         "@media (min-width: 576px)": { maxWidth: 540 },
                         "@media (min-width: 768px)": { maxWidth: 720 },
-                        "@media (min-width: 992px)": { maxWidth: 960, flexDirection: "row" },
+                        "@media (min-width: 992px)": {
+                            maxWidth: 960,
+                            flexDirection: "row",
+                        },
                         "@media (min-width: 1200px)": { maxWidth: 1140 },
                         "@media (min-width: 1400px)": { maxWidth: 1320 },
                     }}
                 >
                     <Box sx={{ width: "20rem", maxWidth: "100%" }}>
-                        <Box sx={{ display: "flex", justifyContent: "center", mb: "1rem" }}>
-                            <Image src={logo} alt="Stop the Thieves" width={200} height={200} />
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                mb: "1rem",
+                            }}
+                        >
+                            <Image
+                                src={logo}
+                                alt="Stop the Thieves"
+                                width={200}
+                                height={200}
+                            />
                         </Box>
 
                         <Box
@@ -108,7 +138,9 @@ export default function LobbyPage() {
                                 border: 1,
                                 borderColor: "divider",
                                 borderRadius: "0.375rem",
-                                boxShadow: darkMode ? "0px 0px 34px -10px #a7eefc" : undefined,
+                                boxShadow: darkMode
+                                    ? "0px 0px 34px -10px #a7eefc"
+                                    : undefined,
                             }}
                         >
                             <Box
@@ -125,24 +157,50 @@ export default function LobbyPage() {
 
                             <Box sx={{ p: "0.5rem" }}>
                                 <Link href="/play">
-                                    <ArticlesButton small sx={{ width: "100%", mb: "1rem" }}>
-                                        <PlayArrowIcon fontSize="small" sx={{ mr: "0.2rem" }} />
+                                    <ArticlesButton
+                                        small
+                                        sx={{ width: "100%", mb: "1rem" }}
+                                    >
+                                        <PlayArrowIcon
+                                            fontSize="small"
+                                            sx={{ mr: "0.2rem" }}
+                                        />
                                         Play Single Player
                                     </ArticlesButton>
                                 </Link>
 
-                                <Box sx={{ fontWeight: 700, mb: "0.25rem", fontSize: "0.875em", textAlign: "center" }}>
-                                    {lobbyDetails?.online_player_count || 0} player{lobbyDetails?.online_player_count !== 1 && "s"} in the lobby.
+                                <Box
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: "0.25rem",
+                                        fontSize: "0.875em",
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    {lobbyDetails?.online_player_count || 0}{" "}
+                                    player
+                                    {lobbyDetails?.online_player_count !== 1 &&
+                                        "s"}{" "}
+                                    in the lobby.
                                 </Box>
 
                                 <Box
                                     className="servers"
-                                    sx={{ display: "grid", gap: "5px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+                                    sx={{
+                                        display: "grid",
+                                        gap: "5px",
+                                        gridTemplateColumns:
+                                            "repeat(2, minmax(0, 1fr))",
+                                    }}
                                 >
                                     {[1, 2].map((id) => {
-                                        const lobbyLookup = lobbyDetails?.fourFrogsGlobalState?.games?.find(
-                                            (lobby) => parseInt(lobby.server_id) === id,
-                                        );
+                                        const lobbyLookup =
+                                            lobbyDetails?.fourFrogsGlobalState?.games?.find(
+                                                (lobby) =>
+                                                    parseInt(
+                                                        lobby.server_id,
+                                                    ) === id,
+                                            );
 
                                         return (
                                             <Box
@@ -159,40 +217,73 @@ export default function LobbyPage() {
                                                 <Box
                                                     sx={{
                                                         display: "flex",
-                                                        justifyContent: "space-between",
+                                                        justifyContent:
+                                                            "space-between",
                                                         alignItems: "center",
                                                         width: "100%",
                                                         mb: "0.5rem",
                                                     }}
                                                 >
-                                                    <Box sx={{ fontSize: "0.9rem", fontWeight: 700 }}>Server {id}</Box>
-                                                    <Box>{lobbyLookup?.players?.length || 0}/4</Box>
+                                                    <Box
+                                                        sx={{
+                                                            fontSize: "0.9rem",
+                                                            fontWeight: 700,
+                                                        }}
+                                                    >
+                                                        Server {id}
+                                                    </Box>
+                                                    <Box>
+                                                        {lobbyLookup?.players
+                                                            ?.length || 0}
+                                                        /4
+                                                    </Box>
                                                 </Box>
 
                                                 <Box
                                                     sx={{
                                                         display: "flex",
-                                                        justifyContent: "space-around",
+                                                        justifyContent:
+                                                            "space-around",
                                                         width: "100%",
                                                         mb: "0.25rem",
                                                     }}
                                                 >
-                                                    {[1, 2, 3, 4].map((playerCount) => (
-                                                        <Box
-                                                            key={playerCount}
-                                                            className="icon"
-                                                            sx={{
-                                                                width: 20,
-                                                                height: 20,
-                                                                bgcolor: lobbyLookup?.players?.length >= playerCount ? "black" : "gray",
-                                                                border: "1px solid black",
-                                                            }}
-                                                        />
-                                                    ))}
+                                                    {[1, 2, 3, 4].map(
+                                                        (playerCount) => (
+                                                            <Box
+                                                                key={
+                                                                    playerCount
+                                                                }
+                                                                className="icon"
+                                                                sx={{
+                                                                    width: 20,
+                                                                    height: 20,
+                                                                    bgcolor:
+                                                                        lobbyLookup
+                                                                            ?.players
+                                                                            ?.length >=
+                                                                        playerCount
+                                                                            ? "black"
+                                                                            : "gray",
+                                                                    border: "1px solid black",
+                                                                }}
+                                                            />
+                                                        ),
+                                                    )}
                                                 </Box>
 
-                                                <Link href={{ pathname: "/play", query: { server: id } }}>
-                                                    <ArticlesButton small sx={{ px: "3rem" }}>Join</ArticlesButton>
+                                                <Link
+                                                    href={{
+                                                        pathname: "/play",
+                                                        query: { server: id },
+                                                    }}
+                                                >
+                                                    <ArticlesButton
+                                                        small
+                                                        sx={{ px: "3rem" }}
+                                                    >
+                                                        Join
+                                                    </ArticlesButton>
                                                 </Link>
                                             </Box>
                                         );
@@ -210,11 +301,19 @@ export default function LobbyPage() {
                                     borderColor: "divider",
                                 }}
                             >
-                                <GameMenuPrimaryButtonGroup useStore={useStore} type="Landing" />
+                                <GameMenuPrimaryButtonGroup
+                                    useStore={useStore}
+                                    type="Landing"
+                                    useRouter={useRouter}
+                                    useAudioStore={useAudioStore}
+                                />
                             </Box>
                         </Box>
 
-                        <SessionButton port={process.env.NEXT_PUBLIC_GAME_PORT} friendsButton />
+                        <SessionButton
+                            port={process.env.NEXT_PUBLIC_GAME_PORT}
+                            friendsButton
+                        />
                         <ReturnToLauncherButton />
                     </Box>
 

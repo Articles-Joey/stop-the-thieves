@@ -40,7 +40,9 @@ function InviteModal({ show, setShow }) {
                             label="Friend Search"
                             placeholder="Display name or username"
                             value={friendsSearch}
-                            onChange={(event) => setFriendsSearch(event.target.value)}
+                            onChange={(event) =>
+                                setFriendsSearch(event.target.value)
+                            }
                             size="small"
                             fullWidth
                             sx={{ maxWidth: 250 }}
@@ -48,13 +50,26 @@ function InviteModal({ show, setShow }) {
                     </Box>
 
                     <Box sx={{ display: "flex" }}>
-                        <Box sx={{ display: "flex", flexDirection: "column", width: "50%", p: "0.5rem" }}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                width: "50%",
+                                p: "0.5rem",
+                            }}
+                        >
                             <Box>Type</Box>
-                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>{show.type}</Box>
+                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>
+                                {show.type}
+                            </Box>
                             <Box>Game Name</Box>
-                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>{show.game_name}</Box>
+                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>
+                                {show.game_name}
+                            </Box>
                             <Box>Server Id</Box>
-                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>{show.server_id}</Box>
+                            <Box sx={{ mb: "0.5rem", fontWeight: 700 }}>
+                                {show.server_id}
+                            </Box>
                         </Box>
 
                         <Box
@@ -67,13 +82,22 @@ function InviteModal({ show, setShow }) {
                                 p: "0.5rem",
                             }}
                         >
-                            <Box sx={{ color: "text.secondary" }}>Invited Players</Box>
+                            <Box sx={{ color: "text.secondary" }}>
+                                Invited Players
+                            </Box>
                             <Box className="invited-users">
                                 {sentMessages.map((sentMessage) => (
-                                    <Box key={sentMessage._id} sx={{ mb: "0.25rem" }}>
+                                    <Box
+                                        key={sentMessage._id}
+                                        sx={{ mb: "0.25rem" }}
+                                    >
                                         <ViewUserModal
-                                            user_id={sentMessage.populated_user._id}
-                                            populated_user={sentMessage.populated_user}
+                                            user_id={
+                                                sentMessage.populated_user._id
+                                            }
+                                            populated_user={
+                                                sentMessage.populated_user
+                                            }
                                         />
                                     </Box>
                                 ))}
@@ -81,24 +105,69 @@ function InviteModal({ show, setShow }) {
                         </Box>
                     </Box>
 
-                    <Box className="friends" sx={{ borderTop: 1, borderColor: "divider" }}>
+                    <Box
+                        className="friends"
+                        sx={{ borderTop: 1, borderColor: "divider" }}
+                    >
                         {userFriends
-                            ?.filter((user) => !friendsSearch || user.populated_user.display_name?.toLowerCase().includes(friendsSearch.toLowerCase()))
+                            ?.filter(
+                                (user) =>
+                                    !friendsSearch ||
+                                    user.populated_user.display_name
+                                        ?.toLowerCase()
+                                        .includes(friendsSearch.toLowerCase()),
+                            )
                             .map((user) => {
-                                const sent = sentMessages.some((message) => message._id === user._id);
+                                const sent = sentMessages.some(
+                                    (message) => message._id === user._id,
+                                );
 
                                 return (
-                                    <Box key={user._id} sx={{ borderBottom: 1, borderColor: "divider", p: "0.5rem" }}>
-                                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                                    <Box
+                                        key={user._id}
+                                        sx={{
+                                            borderBottom: 1,
+                                            borderColor: "divider",
+                                            p: "0.5rem",
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                            }}
+                                        >
                                             <Box sx={{ ml: "0.5rem" }}>
                                                 <ViewUserModal
-                                                    user_id={user.populated_user._id}
-                                                    populated_user={user.populated_user}
+                                                    user_id={
+                                                        user.populated_user._id
+                                                    }
+                                                    populated_user={
+                                                        user.populated_user
+                                                    }
                                                 />
-                                                <Box sx={{ fontSize: "0.875em" }}>@{user.populated_user.username}</Box>
-                                                <Box sx={{ fontSize: "0.875em" }}>
-                                                    <Box sx={{ fontSize: "0.875em" }}>
-                                                        Added: <ArticlesDate date={user.date} format="PP" />
+                                                <Box
+                                                    sx={{ fontSize: "0.875em" }}
+                                                >
+                                                    @
+                                                    {
+                                                        user.populated_user
+                                                            .username
+                                                    }
+                                                </Box>
+                                                <Box
+                                                    sx={{ fontSize: "0.875em" }}
+                                                >
+                                                    <Box
+                                                        sx={{
+                                                            fontSize: "0.875em",
+                                                        }}
+                                                    >
+                                                        Added:{" "}
+                                                        <ArticlesDate
+                                                            date={user.date}
+                                                            format="PP"
+                                                        />
                                                     </Box>
                                                 </Box>
                                             </Box>
@@ -106,10 +175,18 @@ function InviteModal({ show, setShow }) {
                                                 small
                                                 sx={{ ml: "auto" }}
                                                 disabled={sent}
-                                                onClick={() => setSentMessages((previous) => [
-                                                    ...previous,
-                                                    { _id: user._id, populated_user: user.populated_user },
-                                                ])}
+                                                onClick={() =>
+                                                    setSentMessages(
+                                                        (previous) => [
+                                                            ...previous,
+                                                            {
+                                                                _id: user._id,
+                                                                populated_user:
+                                                                    user.populated_user,
+                                                            },
+                                                        ],
+                                                    )
+                                                }
                                             >
                                                 {sent ? "Sent" : "Invite"}
                                             </ArticlesButton>

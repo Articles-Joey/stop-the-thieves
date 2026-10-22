@@ -1,24 +1,26 @@
-"use client"
+"use client";
 // import { create } from 'zustand'
-import { createWithEqualityFn as create } from 'zustand/traditional'
-import { createSinglePlayerGame, advanceSinglePlayerGame } from '@/gameLogic/singlePlayer/gameState'
-import { resetHitEnemy } from '@/gameLogic/singlePlayer/enemyHelpers'
-import { calculateBarrelScore } from '@/gameLogic/singlePlayer/score'
-import { useScoreStore } from './useScoreStore'
+import { createWithEqualityFn as create } from "zustand/traditional";
+import {
+    createSinglePlayerGame,
+    advanceSinglePlayerGame,
+} from "@/gameLogic/singlePlayer/gameState";
+import { resetHitEnemy } from "@/gameLogic/singlePlayer/enemyHelpers";
+import { calculateBarrelScore } from "@/gameLogic/singlePlayer/score";
+import { useScoreStore } from "./useScoreStore";
 // import { nanoid } from 'nanoid'
 
 // const getLocalStorage = (key) => JSON.parse(window.localStorage.getItem(key))
 // const setLocalStorage = (key, value) => window.localStorage.setItem(key, JSON.stringify(value))
 
 export const useGameStore = create((set, get) => ({
-
     // Mouse and Keyboard
     // Touch
     controlType: "Mouse and Keyboard",
     setControlType: (newValue) => {
         set((prev) => ({
-            controlType: newValue
-        }))
+            controlType: newValue,
+        }));
     },
 
     action: "Idle",
@@ -30,30 +32,39 @@ export const useGameStore = create((set, get) => ({
     cameraDistance: 5,
     setCameraDistance: (cameraDistance) => set({ cameraDistance }),
 
-    gameMode: 'singleplayer',
+    gameMode: "singleplayer",
     serverId: null,
     gameState: createSinglePlayerGame(),
     scoreResult: null,
     showScoreModal: false,
     setShowScoreModal: (showScoreModal) => set({ showScoreModal }),
-    initializeGame: (serverId) => set({
-        gameMode: serverId ? 'multiplayer' : 'singleplayer',
-        serverId: serverId || null,
-        gameState: serverId ? {} : createSinglePlayerGame(),
-        scoreResult: null,
-        showScoreModal: false,
-        projectiles: [],
-        lastShotAt: null,
-    }),
+    initializeGame: (serverId) =>
+        set({
+            gameMode: serverId ? "multiplayer" : "singleplayer",
+            serverId: serverId || null,
+            gameState: serverId ? {} : createSinglePlayerGame(),
+            scoreResult: null,
+            showScoreModal: false,
+            projectiles: [],
+            lastShotAt: null,
+        }),
     // Ignore late socket updates after switching to local play.
     setGameState: (gameState) => {
-        if (get().gameMode === 'multiplayer' && String(gameState.server_id ?? gameState.game_id) === String(get().serverId)) {
+        if (
+            get().gameMode === "multiplayer" &&
+            String(gameState.server_id ?? gameState.game_id) ===
+                String(get().serverId)
+        ) {
             set({ gameState });
         }
     },
     startSinglePlayerGame: () => {
         const state = get();
-        if (state.gameMode !== 'singleplayer' || state.gameState.status === 'In Progress') return false;
+        if (
+            state.gameMode !== "singleplayer" ||
+            state.gameState.status === "In Progress"
+        )
+            return false;
         set({
             gameState: createSinglePlayerGame(Date.now()),
             scoreResult: null,
@@ -65,9 +76,13 @@ export const useGameStore = create((set, get) => ({
     },
     tickSinglePlayerGame: (now = Date.now()) => {
         const state = get();
-        if (state.gameMode !== 'singleplayer' || state.gameState.status !== 'In Progress') return;
+        if (
+            state.gameMode !== "singleplayer" ||
+            state.gameState.status !== "In Progress"
+        )
+            return;
         const gameState = advanceSinglePlayerGame(state.gameState, now);
-        if (gameState.status === 'Game Over') {
+        if (gameState.status === "Game Over") {
             const scoreResult = calculateBarrelScore(gameState);
             useScoreStore.getState().recordScore(scoreResult.totalDistance);
             set({ gameState, scoreResult, showScoreModal: true });
@@ -79,7 +94,7 @@ export const useGameStore = create((set, get) => ({
         // Enforce the deadline even when the timer callback has been delayed.
         get().tickSinglePlayerGame();
         const state = get();
-        if (state.gameMode === 'singleplayer') {
+        if (state.gameMode === "singleplayer") {
             set({ gameState: resetHitEnemy(state.gameState, enemyId) });
         }
     },
@@ -104,12 +119,12 @@ export const useGameStore = create((set, get) => ({
             held: false,
             stolen: false,
             position: [-2.5, 0.65, -2.5],
-        }
+        },
     ],
     setBarrels: (newValue) => {
         set((prev) => ({
-            barrels: newValue
-        }))
+            barrels: newValue,
+        }));
     },
 
     // galleryTheme: "Forest",
@@ -162,10 +177,12 @@ export const useGameStore = create((set, get) => ({
     projectiles: [],
     lastShotAt: null,
     setLastShotAt: (lastShotAt) => set({ lastShotAt }),
-    addProjectile: (projectile) => set((state) => ({
-        projectiles: [...state.projectiles, projectile],
-    })),
-    removeProjectile: (id) => set((state) => ({
-        projectiles: state.projectiles.filter((p) => p.id !== id),
-    })),
-}))
+    addProjectile: (projectile) =>
+        set((state) => ({
+            projectiles: [...state.projectiles, projectile],
+        })),
+    removeProjectile: (id) =>
+        set((state) => ({
+            projectiles: state.projectiles.filter((p) => p.id !== id),
+        })),
+}));

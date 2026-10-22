@@ -7,14 +7,15 @@ import { shallow } from "zustand/shallow";
 import Box from "@mui/material/Box";
 import { useGameStore } from "@/hooks/useGameStore";
 import { useStore } from "@/hooks/useStore";
+import { CHARACTER_CENTER_HEIGHT } from "./physics";
 
-const ENEMY_CENTER_HEIGHT = 0.75;
+const ENEMY_CENTER_HEIGHT = CHARACTER_CENTER_HEIGHT;
 const MARKER_HEIGHT = 2.5;
 const EDGE_PADDING = 56;
 
 export function EnemyIndicatorTracker({ indicatorsRef }) {
-    const camera = useThree(state => state.camera);
-    const { width, height } = useThree(state => state.size);
+    const camera = useThree((state) => state.camera);
+    const { width, height } = useThree((state) => state.size);
 
     useEffect(() => {
         const target = new Vector3();
@@ -23,8 +24,14 @@ export function EnemyIndicatorTracker({ indicatorsRef }) {
         const playerPosition = new Vector3();
         const halfWidth = width / 2;
         const halfHeight = height / 2;
-        const edgeWidth = Math.max(1, halfWidth - Math.min(EDGE_PADDING, width / 4));
-        const edgeHeight = Math.max(1, halfHeight - Math.min(EDGE_PADDING, height / 4));
+        const edgeWidth = Math.max(
+            1,
+            halfWidth - Math.min(EDGE_PADDING, width / 4),
+        );
+        const edgeHeight = Math.max(
+            1,
+            halfHeight - Math.min(EDGE_PADDING, height / 4),
+        );
 
         // Run after the player's camera update and rendering, including on respawn.
         return addAfterEffect(() => {
@@ -44,38 +51,73 @@ export function EnemyIndicatorTracker({ indicatorsRef }) {
 
                 target.set(enemy.x ?? 0, ENEMY_CENTER_HEIGHT, enemy.z ?? 0);
                 const distance = `${target.distanceTo(playerPosition).toFixed(1)} m`;
-                if (marker.distance.textContent !== distance) marker.distance.textContent = distance;
+                if (marker.distance.textContent !== distance)
+                    marker.distance.textContent = distance;
 
-                cameraSpace.copy(target).applyMatrix4(camera.matrixWorldInverse);
+                cameraSpace
+                    .copy(target)
+                    .applyMatrix4(camera.matrixWorldInverse);
                 projected.copy(target).project(camera);
-                const inView = cameraSpace.z < -camera.near
-                    && projected.z >= -1 && projected.z <= 1
-                    && Math.abs(projected.x) <= 1 && Math.abs(projected.y) <= 1;
+                const inView =
+                    cameraSpace.z < -camera.near &&
+                    projected.z >= -1 &&
+                    projected.z <= 1 &&
+                    Math.abs(projected.x) <= 1 &&
+                    Math.abs(projected.y) <= 1;
 
                 let x;
                 let y;
                 if (inView) {
                     target.y = MARKER_HEIGHT;
-                    cameraSpace.copy(target).applyMatrix4(camera.matrixWorldInverse);
+                    cameraSpace
+                        .copy(target)
+                        .applyMatrix4(camera.matrixWorldInverse);
                     // If the head anchor crosses the camera, retain the body's projection.
-                    if (cameraSpace.z < -camera.near) projected.copy(target).project(camera);
-                    x = Math.max(36, Math.min(width - 36, (projected.x + 1) * halfWidth));
-                    y = Math.max(64, Math.min(height - 8, (1 - projected.y) * halfHeight));
+                    if (cameraSpace.z < -camera.near)
+                        projected.copy(target).project(camera);
+                    x = Math.max(
+                        36,
+                        Math.min(width - 36, (projected.x + 1) * halfWidth),
+                    );
+                    y = Math.max(
+                        64,
+                        Math.min(height - 8, (1 - projected.y) * halfHeight),
+                    );
                 } else {
                     // Camera-space bearing avoids mirroring left/right for enemies behind us.
-                    let dx = cameraSpace.x * camera.projectionMatrix.elements[0] * halfWidth;
-                    let dy = -cameraSpace.y * camera.projectionMatrix.elements[5] * halfHeight;
+                    let dx =
+                        cameraSpace.x *
+                        camera.projectionMatrix.elements[0] *
+                        halfWidth;
+                    let dy =
+                        -cameraSpace.y *
+                        camera.projectionMatrix.elements[5] *
+                        halfHeight;
                     if (Math.abs(dx) + Math.abs(dy) < 0.001) {
                         dx = 0;
                         dy = 1;
                     }
-                    const scale = 1 / Math.max(Math.abs(dx) / edgeWidth, Math.abs(dy) / edgeHeight);
+                    const scale =
+                        1 /
+                        Math.max(
+                            Math.abs(dx) / edgeWidth,
+                            Math.abs(dy) / edgeHeight,
+                        );
                     x = halfWidth + dx * scale;
                     y = halfHeight + dy * scale;
                     const length = Math.hypot(dx, dy);
-                    marker.root.style.setProperty("--arrow-x", `${dx / length * 32}px`);
-                    marker.root.style.setProperty("--arrow-y", `${dy / length * 32}px`);
-                    marker.root.style.setProperty("--arrow-angle", `${Math.atan2(dy, dx) + Math.PI / 2}rad`);
+                    marker.root.style.setProperty(
+                        "--arrow-x",
+                        `${(dx / length) * 32}px`,
+                    );
+                    marker.root.style.setProperty(
+                        "--arrow-y",
+                        `${(dy / length) * 32}px`,
+                    );
+                    marker.root.style.setProperty(
+                        "--arrow-angle",
+                        `${Math.atan2(dy, dx) + Math.PI / 2}rad`,
+                    );
                 }
 
                 marker.root.dataset.offscreen = String(!inView);
@@ -91,7 +133,10 @@ export function EnemyIndicatorTracker({ indicatorsRef }) {
 
 const EnemyIndicators = forwardRef(function EnemyIndicators(props, ref) {
     // Movement updates the DOM each frame; React only updates when enemies change.
-    const enemyIds = useGameStore(state => state.gameState.enemies?.map(enemy => enemy.id) ?? [], shallow);
+    const enemyIds = useGameStore(
+        (state) => state.gameState.enemies?.map((enemy) => enemy.id) ?? [],
+        shallow,
+    );
     const overlayRef = useRef(null);
     const markers = useRef(new Map());
     useImperativeHandle(ref, () => ({ overlay: overlayRef, markers }), []);
@@ -109,7 +154,7 @@ const EnemyIndicators = forwardRef(function EnemyIndicators(props, ref) {
                 "&[hidden]": { display: "none" },
             }}
         >
-            {enemyIds.map(id => (
+            {enemyIds.map((id) => (
                 <Box
                     key={id}
                     hidden
@@ -123,15 +168,17 @@ const EnemyIndicators = forwardRef(function EnemyIndicators(props, ref) {
                         flexDirection: "column",
                         alignItems: "center",
                         gap: "3px",
-                        transform: "translate(var(--x), var(--y)) translate(-50%, -100%)",
+                        transform:
+                            "translate(var(--x), var(--y)) translate(-50%, -100%)",
                         filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 65%))",
                         "&[hidden]": { display: "none" },
                         '&[data-offscreen="true"]': {
-                            transform: "translate(var(--x), var(--y)) translate(-50%, -50%)",
+                            transform:
+                                "translate(var(--x), var(--y)) translate(-50%, -50%)",
                             "& [data-arrow]": { display: "block" },
                         },
                     }}
-                    ref={node => {
+                    ref={(node) => {
                         if (node) {
                             markers.current.set(id, {
                                 root: node,
@@ -156,7 +203,11 @@ const EnemyIndicators = forwardRef(function EnemyIndicators(props, ref) {
                         }}
                     >
                         <path d="M8 3h12l-2 23h-8z" />
-                        <circle cx="14" cy="34" r="4" />
+                        <circle
+                            cx="14"
+                            cy="34"
+                            r="4"
+                        />
                     </Box>
                     <Box
                         component="span"
@@ -187,7 +238,8 @@ const EnemyIndicators = forwardRef(function EnemyIndicators(props, ref) {
                             strokeWidth: 3,
                             strokeLinecap: "round",
                             strokeLinejoin: "round",
-                            transform: "translate(var(--arrow-x), var(--arrow-y)) translate(-50%, -50%) rotate(var(--arrow-angle))",
+                            transform:
+                                "translate(var(--arrow-x), var(--arrow-y)) translate(-50%, -50%) rotate(var(--arrow-angle))",
                         }}
                     >
                         <path d="M3 9 9 3l6 6" />

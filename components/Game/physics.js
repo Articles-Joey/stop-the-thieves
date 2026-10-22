@@ -1,5 +1,9 @@
 import { interactionGroups } from "@react-three/rapier";
 
+export const CHARACTER_CAPSULE_ARGS = [0.4, 0.3];
+export const CHARACTER_CENTER_HEIGHT =
+    CHARACTER_CAPSULE_ARGS[0] + CHARACTER_CAPSULE_ARGS[1];
+
 // World objects use Rapier's default group 0. Players and shots use separate
 // groups so firing cannot push the player or collide with another projectile.
 export const PLAYER_COLLISION_GROUPS = interactionGroups(1, [0, 1, 3]);

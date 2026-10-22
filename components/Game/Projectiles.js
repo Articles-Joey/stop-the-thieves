@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useEffect, useMemo, useRef } from "react";
 import { BallCollider, RigidBody } from "@react-three/rapier";
 import { useGameStore } from "@/hooks/useGameStore";
@@ -8,13 +8,22 @@ import { PROJECTILE_COLLISION_GROUPS, PROJECTILE_TTL_MS } from "./physics";
 
 function Projectile({ id, position, velocity }) {
     const server = useSearchParams().get("server");
-    const removeProjectile = useGameStore(state => state.removeProjectile);
+    const removeProjectile = useGameStore((state) => state.removeProjectile);
     const hasHit = useRef(false);
-    const userData = useMemo(() => ({ isProjectile: true, projectileId: id }), [id]);
+    const userData = useMemo(
+        () => ({ isProjectile: true, projectileId: id }),
+        [id],
+    );
 
     const handleHit = ({ other }) => {
         const data = other.rigidBodyObject?.userData;
-        if (hasHit.current || data?.isPlayer || data?.isProjectile || data?.isBarrel) return;
+        if (
+            hasHit.current ||
+            data?.isPlayer ||
+            data?.isProjectile ||
+            data?.isBarrel
+        )
+            return;
         hasHit.current = true;
 
         if (data?.isSocketEnemy) {
@@ -68,6 +77,15 @@ function Projectile({ id, position, velocity }) {
 }
 
 export default function Projectiles() {
-    const projectiles = useGameStore(state => state.projectiles);
-    return <>{projectiles.map(projectile => <Projectile key={projectile.id} {...projectile} />)}</>;
+    const projectiles = useGameStore((state) => state.projectiles);
+    return (
+        <>
+            {projectiles.map((projectile) => (
+                <Projectile
+                    key={projectile.id}
+                    {...projectile}
+                />
+            ))}
+        </>
+    );
 }

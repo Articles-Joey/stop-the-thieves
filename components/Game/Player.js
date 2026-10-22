@@ -1,14 +1,29 @@
-import { useFrame, useThree } from "@react-three/fiber"
-import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier"
-import { useEffect, useRef, useState, memo, forwardRef, useImperativeHandle } from "react"
-import { Vector3 } from "three"
-import { useKeyboard } from "@/hooks/useKeyboard"
-import { useGameStore } from "@/hooks/useGameStore"
-import { useControlsStore } from "@/hooks/useControlsStore"
-import { useSocketStore } from "@/hooks/useSocketStore"
-import { useStore } from "@/hooks/useStore"
-import { Model as SpacesuitModel } from "@/components/Models/Spacesuit"
-import { AIM_DISTANCE, PLAYER_COLLISION_GROUPS, PROJECTILE_COLLISION_GROUPS, PROJECTILE_SPEED, SHOT_COOLDOWN_MS, SHOOTING_STATUSES } from "./physics"
+import { useFrame, useThree } from "@react-three/fiber";
+import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
+import {
+    useEffect,
+    useRef,
+    useState,
+    memo,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
+import { Vector3 } from "three";
+import { useKeyboard } from "@/hooks/useKeyboard";
+import { useGameStore } from "@/hooks/useGameStore";
+import { useControlsStore } from "@/hooks/useControlsStore";
+import { useSocketStore } from "@/hooks/useSocketStore";
+import { useStore } from "@/hooks/useStore";
+import PlayerCharacter from "./PlayerCharacter";
+import {
+    AIM_DISTANCE,
+    CHARACTER_CAPSULE_ARGS,
+    PLAYER_COLLISION_GROUPS,
+    PROJECTILE_COLLISION_GROUPS,
+    PROJECTILE_SPEED,
+    SHOT_COOLDOWN_MS,
+    SHOOTING_STATUSES,
+} from "./physics";
 
 const JUMP_FORCE = 6;
 const SPEED = 4;
@@ -25,45 +40,55 @@ const SCROLL_SENSITIVITY = 0.5;
 const PLAYER_USER_DATA = { isPlayer: true };
 
 function PlayerBase() {
-
     const setTopCheckpoint = useGameStore((state) => state.setTopCheckpoint);
     const setPlayer = useGameStore((state) => state.setPlayer);
     const setPosition = useGameStore((state) => state.setPosition);
     const setIsThirdPerson = useGameStore((state) => state.setIsThirdPerson);
     const addProjectile = useGameStore((state) => state.addProjectile);
     const setAction = useGameStore((state) => state.setAction);
+    const nickname = useStore((state) => state.nickname);
     // const setCameraDistance = useGameStore((state) => state.setCameraDistance);
 
-    const { moveBackward, moveForward, moveRight, moveLeft, jump, shift, crouch, cameraView } = useKeyboard()
+    const {
+        moveBackward,
+        moveForward,
+        moveRight,
+        moveLeft,
+        jump,
+        shift,
+        crouch,
+        cameraView,
+    } = useKeyboard();
 
-    const { camera, gl } = useThree()
-    const { world, rapier } = useRapier()
-    const ref = useRef(null)
-    const pos = useRef([0, 1, 0])
-    const vel = useRef([0, 0, 0])
+    const { camera, gl } = useThree();
+    const { world, rapier } = useRapier();
+    const ref = useRef(null);
+    const pos = useRef([0, 1, 0]);
+    const vel = useRef([0, 0, 0]);
 
-    const [action, setLocalAction] = useState("Idle")
-    const [isJumping, setIsJumping] = useState(false)
-    const [isThirdPerson, setIsThirdPersonLocal] = useState(false)
+    const [action, setLocalAction] = useState("Idle");
+    const animationRef = useRef(null);
+    const [isJumping, setIsJumping] = useState(false);
+    const [isThirdPerson, setIsThirdPersonLocal] = useState(false);
 
-    const prevCameraView = useRef(false)
-    const cameraDistanceRef = useRef(THIRD_PERSON_DEFAULT_DISTANCE)
-    const modelRef = useRef()
-    const groundedFrames = useRef(0)
-    const lastJumpTime = useRef(0)
-    const lastForwardPressTime = useRef(0)
-    const isDoubleTapSprinting = useRef(false)
-    const wasMovingForward = useRef(false)
-    const knockbackEndTime = useRef(0)
-    const explosionRef = useRef(null)
-    const fireRef = useRef({ mouse: false, keyboard: false, pending: false })
+    const prevCameraView = useRef(false);
+    const cameraDistanceRef = useRef(THIRD_PERSON_DEFAULT_DISTANCE);
+    const modelRef = useRef();
+    const groundedFrames = useRef(0);
+    const lastJumpTime = useRef(0);
+    const lastForwardPressTime = useRef(0);
+    const isDoubleTapSprinting = useRef(false);
+    const wasMovingForward = useRef(false);
+    const knockbackEndTime = useRef(0);
+    const explosionRef = useRef(null);
+    const fireRef = useRef({ mouse: false, keyboard: false, pending: false });
 
     // Sprint state
-    const SPRINT_MAX = 1.5       // seconds of sprint energy
-    const SPRINT_COOLDOWN = 5  // seconds before refill starts
-    const SPRINT_REFILL = 1  // energy per second (fills in 2s)
-    const sprintEnergyRef = useRef(SPRINT_MAX)
-    const lastSprintActiveRef = useRef(0)  // timestamp of last active sprint frame
+    const SPRINT_MAX = 1.5; // seconds of sprint energy
+    const SPRINT_COOLDOWN = 5; // seconds before refill starts
+    const SPRINT_REFILL = 1; // energy per second (fills in 2s)
+    const sprintEnergyRef = useRef(SPRINT_MAX);
+    const lastSprintActiveRef = useRef(0); // timestamp of last active sprint frame
 
     const handleCollision = ({ other }) => {
         const data = other.rigidBodyObject?.userData;
@@ -73,18 +98,21 @@ function PlayerBase() {
         const isSpikyBall = data.spikyBall;
         const hForce = isSpikyBall ? 28 : 18;
         knockbackEndTime.current = Date.now() + (isSpikyBall ? 800 : 500);
-        ref.current?.setLinvel({
-            x: (Math.random() - 0.5) * hForce,
-            y: isSpikyBall ? 20 : 14,
-            z: (Math.random() - 0.5) * hForce,
-        }, true);
+        ref.current?.setLinvel(
+            {
+                x: (Math.random() - 0.5) * hForce,
+                y: isSpikyBall ? 20 : 14,
+                z: (Math.random() - 0.5) * hForce,
+            },
+            true,
+        );
         if (isSpikyBall) explosionRef.current?.trigger([...pos.current]);
     };
 
     useEffect(() => {
         // Convert to yaw/pitch order while preserving the current orientation.
         // Assigning .order directly reinterprets the angles and can add roll.
-        camera.rotation.reorder('YXZ');
+        camera.rotation.reorder("YXZ");
         setPlayer(ref, ref.current);
         return () => setPlayer(null, null);
     }, [camera, setPlayer]);
@@ -92,20 +120,24 @@ function PlayerBase() {
     // Toggle third-person on key press (not release)
     useEffect(() => {
         if (cameraView && !prevCameraView.current) {
-            setIsThirdPersonLocal(prev => !prev);
+            setIsThirdPersonLocal((prev) => !prev);
         }
-        prevCameraView.current = cameraView
-    }, [cameraView])
+        prevCameraView.current = cameraView;
+    }, [cameraView]);
 
     // Sync local isThirdPerson state to the game store
     useEffect(() => {
         setIsThirdPerson(isThirdPerson);
-    }, [isThirdPerson, setIsThirdPerson])
+    }, [isThirdPerson, setIsThirdPerson]);
 
     // Holding left click or Enter fires at most once per second.
     useEffect(() => {
         const handleMouseDown = (e) => {
-            if (e.button === 0 && (e.target === gl.domElement || document.pointerLockElement === gl.domElement)) {
+            if (
+                e.button === 0 &&
+                (e.target === gl.domElement ||
+                    document.pointerLockElement === gl.domElement)
+            ) {
                 fireRef.current.mouse = true;
                 fireRef.current.pending = true;
             }
@@ -114,13 +146,18 @@ function PlayerBase() {
             if (e.button === 0) fireRef.current.mouse = false;
         };
         const handleKeyDown = (e) => {
-            if (e.code === 'Enter' && !e.target.closest?.('input, textarea, select, button, [contenteditable="true"]')) {
+            if (
+                e.code === "Enter" &&
+                !e.target.closest?.(
+                    'input, textarea, select, button, [contenteditable="true"]',
+                )
+            ) {
                 fireRef.current.keyboard = true;
                 if (!e.repeat) fireRef.current.pending = true;
             }
         };
         const handleKeyUp = (e) => {
-            if (e.code === 'Enter') fireRef.current.keyboard = false;
+            if (e.code === "Enter") fireRef.current.keyboard = false;
         };
         const resetFire = () => {
             fireRef.current = { mouse: false, keyboard: false, pending: false };
@@ -128,19 +165,22 @@ function PlayerBase() {
         const handlePointerLock = () => {
             if (document.pointerLockElement !== gl.domElement) resetFire();
         };
-        document.addEventListener('mousedown', handleMouseDown);
-        document.addEventListener('mouseup', handleMouseUp);
-        document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keyup', handleKeyUp);
-        document.addEventListener('pointerlockchange', handlePointerLock);
-        window.addEventListener('blur', resetFire);
+        document.addEventListener("mousedown", handleMouseDown);
+        document.addEventListener("mouseup", handleMouseUp);
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+        document.addEventListener("pointerlockchange", handlePointerLock);
+        window.addEventListener("blur", resetFire);
         return () => {
-            document.removeEventListener('mousedown', handleMouseDown);
-            document.removeEventListener('mouseup', handleMouseUp);
-            document.removeEventListener('keydown', handleKeyDown);
-            document.removeEventListener('keyup', handleKeyUp);
-            document.removeEventListener('pointerlockchange', handlePointerLock);
-            window.removeEventListener('blur', resetFire);
+            document.removeEventListener("mousedown", handleMouseDown);
+            document.removeEventListener("mouseup", handleMouseUp);
+            document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("keyup", handleKeyUp);
+            document.removeEventListener(
+                "pointerlockchange",
+                handlePointerLock,
+            );
+            window.removeEventListener("blur", resetFire);
         };
     }, [gl]);
 
@@ -150,26 +190,17 @@ function PlayerBase() {
             const setCameraDistance = useGameStore.getState().setCameraDistance;
             cameraDistanceRef.current = Math.min(
                 THIRD_PERSON_MAX_DISTANCE,
-                Math.max(THIRD_PERSON_MIN_DISTANCE, cameraDistanceRef.current + e.deltaY * SCROLL_SENSITIVITY * 0.01)
+                Math.max(
+                    THIRD_PERSON_MIN_DISTANCE,
+                    cameraDistanceRef.current +
+                        e.deltaY * SCROLL_SENSITIVITY * 0.01,
+                ),
             );
             setCameraDistance(cameraDistanceRef.current);
-        }
-        document.addEventListener('wheel', handleWheel, { passive: true })
-        return () => document.removeEventListener('wheel', handleWheel)
-    }, [])
-
-    // Animation state from keyboard
-    useEffect(() => {
-        if (isJumping) return;
-        if (moveLeft || moveRight || moveBackward || moveForward) {
-            const next = shift || isDoubleTapSprinting.current ? "Run" : "Walk";
-            setLocalAction(next);
-            setAction(next);
-        } else {
-            setLocalAction("Idle");
-            setAction("Idle");
-        }
-    }, [moveBackward, moveForward, moveRight, moveLeft, isJumping, shift])
+        };
+        document.addEventListener("wheel", handleWheel, { passive: true });
+        return () => document.removeEventListener("wheel", handleWheel);
+    }, []);
 
     useFrame((_, delta) => {
         const body = ref.current;
@@ -187,7 +218,11 @@ function PlayerBase() {
 
         // Keep model in sync with physics body even during knockback
         if (modelRef.current) {
-            modelRef.current.position.set(pos.current[0], pos.current[1], pos.current[2]);
+            modelRef.current.position.set(
+                pos.current[0],
+                pos.current[1],
+                pos.current[2],
+            );
         }
 
         // --- Gamepad input ---
@@ -196,14 +231,18 @@ function PlayerBase() {
 
         const tc = useControlsStore.getState().touchControls;
 
-        let forwardInput = ((moveBackward || tc.backward) ? 1 : 0) - ((moveForward || tc.forward) ? 1 : 0);
-        let sideInput = ((moveLeft || tc.left) ? 1 : 0) - ((moveRight || tc.right) ? 1 : 0);
+        let forwardInput =
+            (moveBackward || tc.backward ? 1 : 0) -
+            (moveForward || tc.forward ? 1 : 0);
+        let sideInput =
+            (moveLeft || tc.left ? 1 : 0) - (moveRight || tc.right ? 1 : 0);
         let rotationX = 0;
         let rotationY = 0;
 
         const isForward = moveForward || tc.forward;
         if (isForward && !wasMovingForward.current) {
-            if (Date.now() - lastForwardPressTime.current < 300) isDoubleTapSprinting.current = true;
+            if (Date.now() - lastForwardPressTime.current < 300)
+                isDoubleTapSprinting.current = true;
             lastForwardPressTime.current = Date.now();
         }
         if (!isForward) isDoubleTapSprinting.current = false;
@@ -216,8 +255,10 @@ function PlayerBase() {
             if (Math.abs(axisY) > CONTROLLER_DEADZONE) forwardInput += axisY;
             const lookX = gamepad.axes[2];
             const lookY = gamepad.axes[3];
-            if (Math.abs(lookX) > CONTROLLER_DEADZONE) rotationY = -lookX * LOOK_SENSITIVITY;
-            if (Math.abs(lookY) > CONTROLLER_DEADZONE) rotationX = -lookY * LOOK_SENSITIVITY;
+            if (Math.abs(lookX) > CONTROLLER_DEADZONE)
+                rotationY = -lookX * LOOK_SENSITIVITY;
+            if (Math.abs(lookY) > CONTROLLER_DEADZONE)
+                rotationX = -lookY * LOOK_SENSITIVITY;
         }
 
         // Touch look contribution (continuous per-frame, rate = 2 rad/sec at full deflection)
@@ -227,7 +268,10 @@ function PlayerBase() {
 
         if (rotationX !== 0 || rotationY !== 0) {
             camera.rotation.y += rotationY;
-            camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x + rotationX));
+            camera.rotation.x = Math.max(
+                -Math.PI / 3,
+                Math.min(Math.PI / 3, camera.rotation.x + rotationX),
+            );
             camera.rotation.z = 0; // prevent roll drift
         }
 
@@ -235,36 +279,84 @@ function PlayerBase() {
         // position. The player stays below/left of the center aiming reticle.
         const forward = camera.getWorldDirection(new Vector3());
         if (isThirdPerson) {
-            const right = new Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-            camera.position.set(translation.x, translation.y + THIRD_PERSON_HEIGHT + THIRD_PERSON_CAMERA_LIFT, translation.z);
-            camera.position.addScaledVector(forward, -cameraDistanceRef.current);
-            camera.position.addScaledVector(right, THIRD_PERSON_SHOULDER_OFFSET);
-            camera.position.y = Math.max(CAMERA_GROUND_OFFSET, camera.position.y);
+            const right = new Vector3(1, 0, 0).applyQuaternion(
+                camera.quaternion,
+            );
+            camera.position.set(
+                translation.x,
+                translation.y + THIRD_PERSON_HEIGHT + THIRD_PERSON_CAMERA_LIFT,
+                translation.z,
+            );
+            camera.position.addScaledVector(
+                forward,
+                -cameraDistanceRef.current,
+            );
+            camera.position.addScaledVector(
+                right,
+                THIRD_PERSON_SHOULDER_OFFSET,
+            );
+            camera.position.y = Math.max(
+                CAMERA_GROUND_OFFSET,
+                camera.position.y,
+            );
         } else {
-            camera.position.set(translation.x, translation.y + (crouch ? -0.2 : 0.3), translation.z);
+            camera.position.set(
+                translation.x,
+                translation.y + (crouch ? -0.2 : 0.3),
+                translation.z,
+            );
         }
 
         const now = performance.now();
         const game = useGameStore.getState();
         const menuOpen = useStore.getState().showMenu;
-        const wantsFire = fireRef.current.pending || fireRef.current.mouse || fireRef.current.keyboard || gamepad?.buttons[7]?.pressed;
+        const wantsFire =
+            fireRef.current.pending ||
+            fireRef.current.mouse ||
+            fireRef.current.keyboard ||
+            gamepad?.buttons[7]?.pressed;
         fireRef.current.pending = false;
-        if (menuOpen) fireRef.current = { mouse: false, keyboard: false, pending: false };
+        if (menuOpen)
+            fireRef.current = { mouse: false, keyboard: false, pending: false };
 
-        if (!menuOpen && SHOOTING_STATUSES.includes(game.gameState.status) && wantsFire
-            && (game.lastShotAt === null || now - game.lastShotAt >= SHOT_COOLDOWN_MS)) {
+        if (
+            !menuOpen &&
+            SHOOTING_STATUSES.includes(game.gameState.status) &&
+            wantsFire &&
+            (game.lastShotAt === null ||
+                now - game.lastShotAt >= SHOT_COOLDOWN_MS)
+        ) {
             // Trace through the center of the screen, then converge the shot
             // from the player's muzzle onto that point instead of the player.
             const origin = isThirdPerson
-                ? new Vector3(translation.x, translation.y + THIRD_PERSON_HEIGHT, translation.z)
+                ? new Vector3(
+                      translation.x,
+                      translation.y + THIRD_PERSON_HEIGHT,
+                      translation.z,
+                  )
                 : camera.position.clone();
             // Begin the camera ray just ahead of the muzzle's depth plane so
             // objects between the camera and player cannot aim a shot backward.
-            const muzzleDepth = Math.max(0, origin.clone().sub(camera.position).dot(forward)) + 0.13;
-            const rayOrigin = camera.position.clone().addScaledVector(forward, muzzleDepth);
+            const muzzleDepth =
+                Math.max(0, origin.clone().sub(camera.position).dot(forward)) +
+                0.13;
+            const rayOrigin = camera.position
+                .clone()
+                .addScaledVector(forward, muzzleDepth);
             const ray = new rapier.Ray(rayOrigin, forward);
-            const hit = world.castRay(ray, AIM_DISTANCE, true, undefined, PROJECTILE_COLLISION_GROUPS, undefined, body);
-            const aimPoint = rayOrigin.addScaledVector(forward, hit?.timeOfImpact ?? AIM_DISTANCE);
+            const hit = world.castRay(
+                ray,
+                AIM_DISTANCE,
+                true,
+                undefined,
+                PROJECTILE_COLLISION_GROUPS,
+                undefined,
+                body,
+            );
+            const aimPoint = rayOrigin.addScaledVector(
+                forward,
+                hit?.timeOfImpact ?? AIM_DISTANCE,
+            );
             const direction = aimPoint.sub(origin).normalize();
             // Start at the muzzle: a long spawn offset can skip close enemies.
             const spawnPos = origin.toArray();
@@ -273,15 +365,25 @@ function PlayerBase() {
             addProjectile({
                 id: projId,
                 position: spawnPos,
-                velocity: direction.clone().multiplyScalar(PROJECTILE_SPEED).toArray(),
+                velocity: direction
+                    .clone()
+                    .multiplyScalar(PROJECTILE_SPEED)
+                    .toArray(),
             });
-            if (game.gameMode === 'multiplayer' && game.gameState.status === 'In Progress') useSocketStore.getState().socket?.emit('projectile_fired', {
-                id: projId,
-                server: game.serverId,
-                position: spawnPos,
-                direction: direction.toArray(),
-                cameraRotation: { x: camera.rotation.x, y: camera.rotation.y },
-            });
+            if (
+                game.gameMode === "multiplayer" &&
+                game.gameState.status === "In Progress"
+            )
+                useSocketStore.getState().socket?.emit("projectile_fired", {
+                    id: projId,
+                    server: game.serverId,
+                    position: spawnPos,
+                    direction: direction.toArray(),
+                    cameraRotation: {
+                        x: camera.rotation.x,
+                        y: camera.rotation.y,
+                    },
+                });
         }
 
         // Camera and aiming keep working while movement is knocked back.
@@ -297,7 +399,8 @@ function PlayerBase() {
         // This correctly handles ramps where Y velocity is non-zero but the player is still on a surface.
         const isGrounded = !isJumping && Date.now() >= knockbackEndTime.current;
         const knockedBack = Date.now() < knockbackEndTime.current;
-        const wantSprint = isSprintingInput && isMoving && isGrounded && !knockedBack;
+        const wantSprint =
+            isSprintingInput && isMoving && isGrounded && !knockedBack;
         const isSprinting = wantSprint && sprintEnergyRef.current > 0;
 
         // if (isSprinting) {
@@ -319,21 +422,28 @@ function PlayerBase() {
         //     && !isSprinting;
         // setSprintMeter(sprintNormalized, sprintOnCooldown);
 
-        const direction = new Vector3()
+        const direction = new Vector3();
         direction
             .subVectors(frontVector, sideVector)
             .normalize()
-            .applyEuler(camera.rotation)
-        direction.y = 0
-        direction.normalize().multiplyScalar(SPEED * (isSprinting ? 2 : 1))
+            .applyEuler(camera.rotation);
+        direction.y = 0;
+        direction.normalize().multiplyScalar(SPEED * (isSprinting ? 2 : 1));
 
-        body.setLinvel({ x: direction.x, y: vel.current[1], z: direction.z }, true)
+        body.setLinvel(
+            { x: direction.x, y: vel.current[1], z: direction.z },
+            true,
+        );
 
         // --- Ground detection ---
         const groundHit = world.castRay(
             new rapier.Ray(translation, { x: 0, y: -1, z: 0 }),
-            0.78, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS,
-            PLAYER_COLLISION_GROUPS, undefined, body,
+            0.78,
+            true,
+            rapier.QueryFilterFlags.EXCLUDE_SENSORS,
+            PLAYER_COLLISION_GROUPS,
+            undefined,
+            body,
         );
         if (groundHit && Math.abs(vel.current[1]) < 0.1) {
             groundedFrames.current++;
@@ -342,35 +452,55 @@ function PlayerBase() {
         }
 
         // Landing
-        if (isJumping && groundedFrames.current > 4 && Date.now() - lastJumpTime.current > 500) {
+        let airborne = isJumping;
+        if (
+            isJumping &&
+            groundedFrames.current > 4 &&
+            Date.now() - lastJumpTime.current > 500
+        ) {
             setIsJumping(false);
-            setAction("Idle");
-            setLocalAction("Idle");
+            airborne = false;
         }
 
         // Jump
-        const isJumpingInput = jump || tc.jump || (gamepad?.buttons[0]?.pressed);
-        if (isJumpingInput && groundedFrames.current > 2 && !isJumping) {
-            body.setLinvel({ x: direction.x, y: JUMP_FORCE, z: direction.z }, true);
+        const isJumpingInput = jump || tc.jump || gamepad?.buttons[0]?.pressed;
+        if (isJumpingInput && groundedFrames.current > 2 && !airborne) {
+            body.setLinvel(
+                { x: direction.x, y: JUMP_FORCE, z: direction.z },
+                true,
+            );
             setIsJumping(true);
-            setAction("Jump");
-            setLocalAction("Jump");
+            airborne = true;
             lastJumpTime.current = Date.now();
             groundedFrames.current = 0;
             // Consume touch jump so it doesn't re-fire on landing while still held
-            if (tc.jump) useControlsStore.getState().setTouchControls({ jump: false });
+            if (tc.jump)
+                useControlsStore.getState().setTouchControls({ jump: false });
+        }
+
+        // Use the combined keyboard, touch and gamepad input for both character rigs.
+        const nextAction = airborne
+            ? "Jump"
+            : isMoving
+              ? isSprinting
+                  ? "Run"
+                  : "Walk"
+              : "Idle";
+        if (animationRef.current !== nextAction) {
+            animationRef.current = nextAction;
+            setLocalAction(nextAction);
+            setAction(nextAction);
         }
 
         // In third person the player faces the reticle while moving sideways
         // or backward. First-person movement retains its existing model heading.
         if (modelRef.current && (isMoving || isThirdPerson)) {
             const facing = isThirdPerson ? forward : direction;
-            const angle = Math.atan2(facing.x, facing.z)
-            modelRef.current.rotation.y = angle
-            useGameStore.getState().setModelRotation([0, angle, 0])
+            const angle = Math.atan2(facing.x, facing.z);
+            modelRef.current.rotation.y = angle;
+            useGameStore.getState().setModelRotation([0, angle, 0]);
         }
-
-    })
+    });
 
     return (
         <>
@@ -385,7 +515,7 @@ function PlayerBase() {
                 onIntersectionEnter={handleCollision}
             >
                 <CapsuleCollider
-                    args={[0.4, 0.3]}
+                    args={CHARACTER_CAPSULE_ARGS}
                     mass={1}
                     friction={0}
                     restitution={0}
@@ -393,15 +523,17 @@ function PlayerBase() {
                 />
             </RigidBody>
             <Explosion ref={explosionRef} />
-            <group ref={modelRef} visible={isThirdPerson}>
-                <SpacesuitModel
-                    scale={0.75}
-                    position={[0, -0.75, 0]}
-                    action={isJumping ? "Jump" : action}
+            <group
+                ref={modelRef}
+                visible={isThirdPerson}
+            >
+                <PlayerCharacter
+                    action={action}
+                    nickname={nickname}
                 />
             </group>
         </>
-    )
+    );
 }
 
 export const Player = memo(PlayerBase);
@@ -418,25 +550,32 @@ const Explosion = forwardRef(function Explosion(_, ref) {
     const meshRefs = useRef([]);
     const active = useRef(false);
 
-    useImperativeHandle(ref, () => ({
-        trigger(origin) {
-            active.current = true;
-            particles.current = Array.from({ length: PARTICLE_COUNT }, () => {
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.random() * Math.PI;
-                const speed = 4 + Math.random() * 8;
-                return {
-                    position: [...origin],
-                    velocity: [
-                        Math.sin(phi) * Math.cos(theta) * speed,
-                        Math.sin(phi) * Math.sin(theta) * speed,
-                        Math.cos(phi) * speed,
-                    ],
-                    life: 1,
-                };
-            });
-        }
-    }), []);
+    useImperativeHandle(
+        ref,
+        () => ({
+            trigger(origin) {
+                active.current = true;
+                particles.current = Array.from(
+                    { length: PARTICLE_COUNT },
+                    () => {
+                        const theta = Math.random() * Math.PI * 2;
+                        const phi = Math.random() * Math.PI;
+                        const speed = 4 + Math.random() * 8;
+                        return {
+                            position: [...origin],
+                            velocity: [
+                                Math.sin(phi) * Math.cos(theta) * speed,
+                                Math.sin(phi) * Math.sin(theta) * speed,
+                                Math.cos(phi) * speed,
+                            ],
+                            life: 1,
+                        };
+                    },
+                );
+            },
+        }),
+        [],
+    );
 
     useFrame((_, delta) => {
         if (!active.current) return;
@@ -470,7 +609,7 @@ const Explosion = forwardRef(function Explosion(_, ref) {
             {Array.from({ length: PARTICLE_COUNT }, (_, i) => (
                 <mesh
                     key={i}
-                    ref={el => meshRefs.current[i] = el}
+                    ref={(el) => (meshRefs.current[i] = el)}
                     scale={0}
                 >
                     <sphereGeometry args={[1, 6, 6]} />

@@ -9,7 +9,10 @@ export const ENEMY_STAGES = [
 ];
 
 export function getEnemyStage(elapsedSeconds) {
-    return ENEMY_STAGES.find(stage => elapsedSeconds < stage.endsAt) ?? ENEMY_STAGES[ENEMY_STAGES.length - 1];
+    return (
+        ENEMY_STAGES.find((stage) => elapsedSeconds < stage.endsAt) ??
+        ENEMY_STAGES[ENEMY_STAGES.length - 1]
+    );
 }
 export const SPAWN_RADIUS = 17;
 export const ESCAPE_RADIUS = 24;

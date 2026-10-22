@@ -1,9 +1,9 @@
-"use client"
-import { useRef } from "react"
-import { useFrame } from "@react-three/fiber"
-import { useSearchParams } from "next/navigation"
-import { useGameStore } from "@/hooks/useGameStore"
-import { useSocketStore } from "@/hooks/useSocketStore"
+"use client";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useSearchParams } from "next/navigation";
+import { useGameStore } from "@/hooks/useGameStore";
+import { useSocketStore } from "@/hooks/useSocketStore";
 
 const SEND_RATE = 1 / 30; // seconds between sends (30 Hz)
 
@@ -24,7 +24,12 @@ export default function PlayerNetworkSync() {
 
     useFrame((_, delta) => {
         const game = useGameStore.getState();
-        if (!server || game.gameMode !== "multiplayer" || game.gameState.status !== "In Progress") return;
+        if (
+            !server ||
+            game.gameMode !== "multiplayer" ||
+            game.gameState.status !== "In Progress"
+        )
+            return;
         accumulator.current += delta;
         if (accumulator.current < SEND_RATE) return;
         accumulator.current = 0;
@@ -34,8 +39,10 @@ export default function PlayerNetworkSync() {
 
         // Check if values have changed
         const hasChanged =
-            JSON.stringify(position) !== JSON.stringify(lastSentData.current.position) ||
-            JSON.stringify(modelRotation) !== JSON.stringify(lastSentData.current.rotation) ||
+            JSON.stringify(position) !==
+                JSON.stringify(lastSentData.current.position) ||
+            JSON.stringify(modelRotation) !==
+                JSON.stringify(lastSentData.current.rotation) ||
             action !== lastSentData.current.action;
 
         if (!hasChanged) return;
